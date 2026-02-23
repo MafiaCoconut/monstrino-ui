@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@config "../../tailwind.config.cjs";
 
 body {
     margin: 0;

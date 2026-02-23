@@ -447,7 +447,7 @@ export const MarketOffers = ({
   offerCardSx?: SxProps<Theme>;
   noticeCardSx?: SxProps<Theme>;
 }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <Box sx={{ backgroundColor: colors.card, borderRadius: 2, border: `1px solid ${colors.cardBorder}`, p: 2 }}>

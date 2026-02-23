@@ -807,7 +807,7 @@ const ReleasePage = () => {
           </IconButton>
         </Box>
         <Collapse in={open}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(2, 1fr)' }, gap: { xs: 3, md: 4 } }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: { xs: 3, md: 4 } }}>
             {data.columns.map((column, colIndex) => (
               <Box key={colIndex}>
                 {column.items.map((item, index) => (
@@ -815,15 +815,28 @@ const ReleasePage = () => {
                     <Box
                       sx={{
                         py: 1.5,
-                        display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        alignItems: { xs: 'flex-start', sm: 'center' },
-                        justifyContent: 'space-between',
-                        gap: { xs: 0.5, sm: 2 },
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: { xs: 1, sm: 2 },
+                        minWidth: 0,
                       }}
                     >
-                      <Typography sx={{ fontSize: 14, color: colors.textMuted }}>{item.label}</Typography>
-                      <Typography sx={{ fontSize: 14, color: colors.textSecondary, fontWeight: 500, textAlign: { xs: 'left', sm: 'right' } }}>
+                      <Typography sx={{ 
+                        fontSize: { xs: 12, sm: 14 }, 
+                        color: colors.textMuted, 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        minWidth: 0,
+                      }}>{item.label}</Typography>
+                      <Typography sx={{ 
+                        fontSize: { xs: 12, sm: 14 }, 
+                        color: colors.textSecondary, 
+                        fontWeight: 500, 
+                        textAlign: 'right',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        minWidth: 0,
+                      }}>
                         {item.value}
                       </Typography>
                     </Box>
@@ -899,7 +912,7 @@ const ReleasePage = () => {
           </IconButton>
         </Box>
         <Collapse in={open}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(2, 1fr)' }, gap: { xs: 3, md: 4 } }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: { xs: 3, md: 4 } }}>
             {data.sections.map((section) => {
               const isOpen = openSections[section.title] ?? false;
               const maxItems = 5;
@@ -908,8 +921,13 @@ const ReleasePage = () => {
 
               return (
                 <Box key={section.title}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 } }}>
-                    <Typography sx={{ fontSize: { xs: 12, md: 13 }, fontWeight: 600, color: colors.textSecondary }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 }, flexWrap: 'nowrap', gap: 1 }}>
+                    <Typography sx={{ 
+                      fontSize: { xs: 12, md: 13 }, 
+                      fontWeight: 600, 
+                      color: colors.textSecondary,
+                      whiteSpace: 'nowrap',
+                    }}>
                       {section.title}
                     </Typography>
                     {hasMore && (
@@ -921,6 +939,8 @@ const ReleasePage = () => {
                           color: colors.textMuted,
                           textTransform: 'none',
                           fontSize: 12,
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
                           '&:hover': { backgroundColor: 'transparent', color: colors.textSecondary },
                         }}
                         endIcon={
@@ -943,15 +963,28 @@ const ReleasePage = () => {
                         <Box
                           sx={{
                             py: 1.5,
-                            display: 'flex',
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            alignItems: { xs: 'flex-start', sm: 'center' },
-                            justifyContent: 'space-between',
-                            gap: { xs: 0.5, sm: 2 },
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: { xs: 1, sm: 2 },
+                            minWidth: 0,
                           }}
                         >
-                          <Typography sx={{ fontSize: 14, color: colors.textMuted }}>{item.label}</Typography>
-                          <Typography sx={{ fontSize: 14, color: colors.textSecondary, fontWeight: 500, textAlign: { xs: 'left', sm: 'right' } }}>
+                          <Typography sx={{ 
+                            fontSize: { xs: 12, sm: 14 }, 
+                            color: colors.textMuted,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            minWidth: 0,
+                          }}>{item.label}</Typography>
+                          <Typography sx={{ 
+                            fontSize: { xs: 12, sm: 14 }, 
+                            color: colors.textSecondary, 
+                            fontWeight: 500, 
+                            textAlign: 'right',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            minWidth: 0,
+                          }}>
                             {item.value}
                           </Typography>
                         </Box>
@@ -1301,12 +1334,17 @@ const ReleasePage = () => {
 
 // Multi-Region Price History Chart Component
   const PriceHistoryChart = () => {
+  const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
   const [selectedRegion, setSelectedRegion] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState(1);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!isMobile);
   const chartRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    setExpanded(!isMobile);
+  }, [isMobile]);
 
   const regions = releaseData.priceHistory?.regions ?? [];
   const periodOptions = releaseData.priceHistory?.periods ?? ['ALL'];
