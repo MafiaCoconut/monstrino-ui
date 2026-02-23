@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+  		"folder-path-color.folders": [
+			{ "path": "src/components", "color": "blue",    "symbol": "⚛", "tooltip": "Reusable Components" },
+			{ "path": "src/widgets",    "color": "green",   "symbol": "🧩", "tooltip": "UI Widgets" },
+			{ "path": "src/pages",      "color": "magenta", "symbol": "📄", "tooltip": "Application Pages" },
+			{ "path": "src/entities",   "color": "custom1", "symbol": "🧑", "tooltip": "Business Entities" },
+			{ "path": "src/features",   "color": "red",     "symbol": "🚀", "tooltip": "Features" },
+			{ "path": "src/shared",     "color": "yellow",  "symbol": "♻", "tooltip": "Shared Utilities" }			
+		],
+		"workbench.colorCustomizations": {
+			"folderPathColor.blue": "#2196F3",
+			"folderPathColor.green": "#4CAF50",
+			"folderPathColor.custom1": "#FF9800"
+		}
+	}
+
+}
