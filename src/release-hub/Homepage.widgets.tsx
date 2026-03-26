@@ -275,12 +275,13 @@ export const StatsSection = () => {
     >
       <Grid container spacing={{ xs: 1.5, sm: 2.5 }}>
         {[
-          { icon: <CollectionsIcon />, value: stats.totalReleases, label: "Releases", color: "#FF1493" },
-          { icon: <PeopleIcon />, value: stats.totalCharacters, label: "Characters", color: "#00D4FF" },
-          { icon: <CategoryIcon />, value: stats.totalSeries, label: "Series", color: "#9B59B6" },
-          { icon: <PetsIcon />, value: stats.totalPets, label: "Pets", color: "#14B8A6" },
+          { icon: <CollectionsIcon />, value: stats.totalReleases, label: "Releases", color: "#FF1493", href: "/catalog/r" },
+          { icon: <PeopleIcon />, value: stats.totalCharacters, label: "Characters", color: "#00D4FF", href: "/catalog/c" },
+          { icon: <CategoryIcon />, value: stats.totalSeries, label: "Series", color: "#9B59B6", href: "/catalog/s" },
+          { icon: <PetsIcon />, value: stats.totalPets, label: "Pets", color: "#14B8A6", href: "/catalog/p" },
         ].map((stat) => (
           <Grid size={{ xs: 6, md: 3 }} key={stat.label}>
+            <Box component={Link} to={stat.href} sx={{ textDecoration: "none", display: "block", height: "100%" }}>
             <Card
               sx={{
                 p: { xs: 1.5, sm: 2.25 },
@@ -292,6 +293,12 @@ export const StatsSection = () => {
                 backdropFilter: "blur(10px)",
                 border: "1px solid",
                 borderColor: "rgba(255, 255, 255, 0.1)",
+                cursor: "pointer",
+                transition: "border-color 0.2s, box-shadow 0.2s",
+                "&:hover": {
+                  borderColor: stat.color,
+                  boxShadow: `0 0 16px ${stat.color}40`,
+                },
               }}
             >
               <Box
@@ -326,6 +333,7 @@ export const StatsSection = () => {
                 </Typography>
               </Box>
             </Card>
+            </Box>
           </Grid>
         ))}
       </Grid>

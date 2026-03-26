@@ -1,3 +1,6 @@
+# ==================
+# ‖  Monstrino UI  ‖
+# ==================
 SHELL := /bin/bash
 .PHONY: run, build
 
@@ -14,11 +17,18 @@ MONSTRINO_UI_IMAGE_NAME := $(REGISTRY)/monstrino/monstrino-ui
 GIT_SHA1 := $(shell git rev-parse --short=10 --verify HEAD)
 
 
+# ======== Include Makefiles ==========
+
+include ../Makefiles/common.mk
+
+# ========== Kubernetes ==========
+
 SERVER_PLATFORM := --platform linux/amd64
 
 NAMESPACE := ""
 NAMESPACE_TEST := "monstrino-test"
 NAMESPACE_PROD := "monstrino-prod"
+
 # ------------------ Local Configuration -----------------
 make config-local:
 	npm install
@@ -38,13 +48,12 @@ push-ui: build
 
 # --------------------- Deploy section --------------------
 
-#deploy-ui-test: use-tc-m70q-context push-ui
 deploy-ui-test: use-tc-m70q-context push-ui
 	kubectl apply -f ../monstrino-configurations/kubernetes/.test/ui/deployment.yaml -n $(NAMESPACE_TEST)
 	kubectl apply -f ../monstrino-configurations/kubernetes/.test/ui/service.yaml    -n $(NAMESPACE_TEST)
 	kubectl set image deployment/monstrino-ui -n $(NAMESPACE_TEST) monstrino-ui=$(MONSTRINO_UI_IMAGE_NAME):$(GIT_SHA1)
+	
 deploy-ui-prod: use-tc-m70q-context push-ui
-# deploy-ui-prod: use-tc-m70q-context push-ui
 	kubectl apply -f ../monstrino-configurations/kubernetes/.prod/ui/deployment.yaml -n $(NAMESPACE_PROD)
 	kubectl apply -f ../monstrino-configurations/kubernetes/.prod/ui/service.yaml    -n $(NAMESPACE_PROD)
 	kubectl set image deployment/monstrino-ui -n $(NAMESPACE_PROD) monstrino-ui=$(MONSTRINO_UI_IMAGE_NAME):$(GIT_SHA1)

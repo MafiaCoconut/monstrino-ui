@@ -3,7 +3,7 @@ import ReleaseCatalog from '@/release-hub/Catalog/ReleaseCatalog';
 import { buildCatalogMetadata } from '@/shared/seo/catalogMetadata';
 
 type PageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

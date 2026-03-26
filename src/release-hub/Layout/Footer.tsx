@@ -42,9 +42,9 @@ const footerLinks = {
   //   { label: 'Instagram', path: '#' },
   // ],
   resources: [
-    { label: 'API', path: '/docusaurus/' },
-    { label: 'Documentation', path: '/docusaurus/' },
-    { label: 'Contribute', path: '/docusaurus/' },
+    { label: 'API', path: 'https://documentation.monstrino.com' },
+    { label: 'Documentation', path: 'https://documentation.monstrino.com' },
+    { label: 'Contribute', path: 'https://documentation.monstrino.com' },
   ],
 };
 

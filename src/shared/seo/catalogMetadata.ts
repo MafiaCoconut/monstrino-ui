@@ -3,12 +3,13 @@ import { getSiteUrl } from './siteUrl';
 
 type SearchParams = Record<string, string | string[] | undefined> | undefined;
 
-export function buildCatalogMetadata(
+export async function buildCatalogMetadata(
   title: string,
   path: string,
-  searchParams?: SearchParams
-): Metadata {
-  const hasQuery = Boolean(searchParams && Object.keys(searchParams).length > 0);
+  searchParams?: Promise<SearchParams> | SearchParams
+): Promise<Metadata> {
+  const resolved = searchParams instanceof Promise ? await searchParams : searchParams;
+  const hasQuery = Boolean(resolved && Object.keys(resolved).length > 0);
   const canonical = `${getSiteUrl()}${path}`;
 
   return {
