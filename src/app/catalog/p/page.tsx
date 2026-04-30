@@ -1,6 +1,11 @@
+import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
-import PetCatalog from '@/release-hub/Catalog/PetCatalog';
+import { Suspense } from 'react';
+import PetCatalog from '@/widgets/catalog/PetCatalog';
+import PetCatalogLegacy from '@/widgets/catalog/PetCatalogLegacy';
 import { buildCatalogMetadata } from '@/shared/seo/catalogMetadata';
+import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -11,5 +16,20 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 }
 
 export default function Page() {
-  return <PetCatalog />;
+  
+  const CatalogComponent = useMockData ? PetCatalogLegacy : PetCatalog;
+  const siteUrl = getSiteUrl();
+  return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', url: `${siteUrl}/` },
+          { name: 'Pets', url: `${siteUrl}/catalog/p` },
+        ]}
+      />
+      <Suspense fallback={null}>
+        <CatalogComponent />
+      </Suspense>
+    </>
+  );
 }

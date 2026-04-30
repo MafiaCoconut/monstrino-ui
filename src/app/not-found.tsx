@@ -4,7 +4,7 @@ import { Box, Button, Container, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import HomeIcon from "@mui/icons-material/Home";
 import SearchOffIcon from "@mui/icons-material/SearchOff";
-import { releaseHubTokens as t } from "../release-hub/designTokens";
+import { releaseHubTokens as t } from "@/shared/ui/designTokens";
 
 export default function NotFound() {
   const router = useRouter();
@@ -127,7 +127,7 @@ export default function NotFound() {
             fontFamily: t.typography.fontFamily.primary,
           }}
         >
-          The page you're looking for doesn't exist or has been moved. Let's get you back to
+          The page you&apos;re looking for doesn&apos;t exist or has been moved. Let&apos;s get you back to
           exploring the Monster High collection.
         </Typography>
 

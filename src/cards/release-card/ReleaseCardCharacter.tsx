@@ -1,11 +1,20 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Link as RouterLink } from '@/shared/router';
 import { Box, Typography, Chip } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { mergeSx } from '@/shared/ui/mergeSx';
-import type { CharacterIndexRelease } from '@/release-hub/entities/character-index';
+
+type CharacterIndexRelease = {
+  id: string | number;
+  name: string;
+  series: string;
+  year?: number | string;
+  image: string;
+  edition?: 'special' | string;
+};
 
 // Gothic theme colors matching CharacterIndex
 const cssVariables = {
@@ -29,6 +38,8 @@ const hslAlpha = (value: string, alpha: number) => {
 
 interface ReleaseCardCharacterProps {
   release: CharacterIndexRelease;
+  /** Pass true for above-the-fold cards to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   imageSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -36,6 +47,7 @@ interface ReleaseCardCharacterProps {
 
 const ReleaseCardCharacter: React.FC<ReleaseCardCharacterProps> = ({
   release,
+  priority = false,
   cardSx,
   imageSx,
   contentSx,
@@ -80,17 +92,17 @@ const ReleaseCardCharacter: React.FC<ReleaseCardCharacterProps> = ({
           imageSx
         )}
       >
-        <Box
-          component="img"
-          src={release.image}
+        <Image
+          src={release.image || '/placeholder.svg'}
           alt={release.name}
-          sx={{
-            width: '100%',
-            height: '100%',
+          fill
+          sizes="(max-width: 600px) 50vw, (max-width: 900px) 33vw, 220px"
+          style={{
             objectFit: 'contain',
             objectPosition: 'center',
             transition: 'transform 0.5s ease',
           }}
+          priority={priority}
         />
       </Box>
 

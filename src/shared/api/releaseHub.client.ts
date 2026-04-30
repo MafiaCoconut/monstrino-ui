@@ -2,7 +2,8 @@
 
 import type { CharacterApi, ReleaseApi, SeriesApi } from '@/shared/seo/releaseHub';
 
-const rawBase = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+import { backendUrl } from '@shared/config/env';
+const rawBase = backendUrl || '';
 const API_BASE = rawBase.replace(/\/$/, '');
 const API_URL = API_BASE ? `${API_BASE}/api/v1` : '';
 

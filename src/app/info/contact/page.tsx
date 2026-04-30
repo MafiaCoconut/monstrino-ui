@@ -1,4 +1,4 @@
-import ContactInfo from '@/release-hub/Info/ContactInfo';
+import ContactInfo from '@/widgets/info/ContactInfo';
 
 export const dynamic = 'force-static';
 

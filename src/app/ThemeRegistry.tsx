@@ -30,7 +30,6 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
           .filter(([, value]) => typeof value === 'string')
           .map(([key]) => key)
           .join(' ')}`}
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: styles }}
       />
     );

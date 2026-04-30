@@ -1,4 +1,4 @@
-import MainInfo from '@/release-hub/Info/MainInfo';
+import MainInfo from '@/widgets/info/MainInfo';
 
 export const dynamic = 'force-static';
 

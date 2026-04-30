@@ -1,5 +1,5 @@
 // @ts-nocheck
-import type { Pet, PetExclusivity, PetId, PetRarity } from '@/release-hub/entities';
+import type { PetExclusivity, PetId, PetRarity } from '@entities/pet';
 import { characterMock } from '@/data/real-data/characterMock';
 import { characterPetOwnershipMock } from '@/data/real-data/characterPetOwnershipMock';
 import { petMock } from '@/data/real-data/petMock';
@@ -24,6 +24,7 @@ const SPECIES_OVERRIDES = new Map<string, string>([
 ]);
 
 const toPetId = (value: string | number): PetId => `${value}` as PetId;
+type Pet = any;
 
 const normalizeName = (value: string) => value.trim().toLowerCase();
 

@@ -1,14 +1,10 @@
 // @ts-nocheck
 import type {
-  Release,
   ReleaseId,
-  ReleasePriceHistory,
-  ReleasePricing,
   ReleasePricingRegion,
-  ReleaseReview,
   ReleaseStockStatus,
   ReleaseVariant,
-} from '@/release-hub/entities';
+} from '@entities/release';
 import { characterMock } from '@/data/real-data/characterMock';
 import { characterRoleMock } from '@/data/real-data/characterRoleMock';
 import { exclusiveVendorMock } from '@/data/real-data/exclusiveVendorMock';
@@ -26,6 +22,7 @@ import { seriesMock } from '@/data/real-data/seriesMock';
 const PLACEHOLDER_IMAGE = '/placeholder.svg';
 
 const toReleaseId = (value: string | number): ReleaseId => `${value}` as ReleaseId;
+type Release = any;
 
 type CharacterRecord = (typeof characterMock)[number];
 type ReleaseRecord = (typeof releaseMock)[number];

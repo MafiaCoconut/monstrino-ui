@@ -1,6 +1,11 @@
+import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
-import CharacterCatalog from '@/release-hub/Catalog/CharacterCatalog';
+import { Suspense } from 'react';
+import CharacterCatalog from '@/widgets/catalog/CharacterCatalog';
+import CharacterCatalogLegacy from '@/widgets/catalog/CharacterCatalogLegacy';
 import { buildCatalogMetadata } from '@/shared/seo/catalogMetadata';
+import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -11,5 +16,20 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 }
 
 export default function Page() {
-  return <CharacterCatalog />;
+  
+  const CatalogComponent = useMockData ? CharacterCatalogLegacy : CharacterCatalog;
+  const siteUrl = getSiteUrl();
+  return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', url: `${siteUrl}/` },
+          { name: 'Characters', url: `${siteUrl}/catalog/c` },
+        ]}
+      />
+      <Suspense fallback={null}>
+        <CatalogComponent />
+      </Suspense>
+    </>
+  );
 }

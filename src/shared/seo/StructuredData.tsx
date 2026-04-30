@@ -1,4 +1,23 @@
 import type { DetailSeoLink } from './DetailSeoContent';
+import type { BreadcrumbItem } from './structuredData';
+import { buildBreadcrumbSchema } from './structuredData';
+
+// ─── Generic JSON-LD renderer ─────────────────────────────────────────────────
+
+export function JsonLd({ schema }: { schema: Record<string, unknown> }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
+export function BreadcrumbJsonLd({ items }: { items: BreadcrumbItem[] }) {
+  return <JsonLd schema={buildBreadcrumbSchema(items)} />;
+}
+
+// ─── Legacy typed components (kept for backward compat) ───────────────────────
 
 type BaseStructuredDataProps = {
   name: string;

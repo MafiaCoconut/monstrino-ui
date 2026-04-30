@@ -1,10 +1,11 @@
-import { Suspense, type ReactNode } from 'react';
-import CatalogLayout from '@/release-hub/Layout/CatalogLayout';
+import type { ReactNode } from 'react';
+import HubLayout from '@/widgets/layout/HubLayout';
+import CatalogLayout from '@/widgets/catalog/CatalogLayout';
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={null}>
+    <HubLayout>
       <CatalogLayout>{children}</CatalogLayout>
-    </Suspense>
+    </HubLayout>
   );
 }

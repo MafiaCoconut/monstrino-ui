@@ -1,4 +1,4 @@
-import PrivacyPage from '@/release-hub/Info/PrivacyPage';
+import PrivacyPage from '@/widgets/info/PrivacyPage';
 
 export const dynamic = 'force-static';
 

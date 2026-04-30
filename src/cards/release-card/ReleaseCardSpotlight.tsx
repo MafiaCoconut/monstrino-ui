@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Link as RouterLink } from '@/shared/router';
 import {
   Box,
   Card,
   CardContent,
-  CardMedia,
   Chip,
   IconButton,
   Typography,
@@ -15,11 +15,20 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { mergeSx } from '@/shared/ui/mergeSx';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import type { ReleaseSummary } from '@/release-hub/entities';
 
 const PLACEHOLDER_IMAGE = '/placeholder.svg';
 
-interface ReleaseCardSpotlightProps extends ReleaseSummary {
+interface ReleaseCardSpotlightProps {
+  id: string | number;
+  name: string;
+  characterName: string;
+  seriesName: string;
+  year?: number;
+  imageUrl?: string;
+  price?: string;
+  isExclusive?: boolean;
+  /** Pass true for above-the-fold spotlight cards to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -34,6 +43,7 @@ const ReleaseCardSpotlight = ({
   imageUrl,
   price,
   isExclusive,
+  priority = false,
   cardSx,
   mediaSx,
   contentSx,
@@ -95,16 +105,13 @@ const ReleaseCardSpotlight = ({
         />
       )}
 
-      <CardMedia
-        component="div"
+      <Box
         sx={mergeSx(
           {
             height: 340,
             backgroundColor: 'background.default',
-            backgroundImage: `url(${imageUrl ?? PLACEHOLDER_IMAGE})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center top',
             position: 'relative',
+            overflow: 'hidden',
             '&::after': {
               content: '""',
               position: 'absolute',
@@ -113,11 +120,21 @@ const ReleaseCardSpotlight = ({
               right: 0,
               height: '60%',
               background: 'linear-gradient(to top, rgba(20, 20, 32, 0.9) 0%, transparent 100%)',
+              zIndex: 1,
             },
           },
           mediaSx
         )}
-      />
+      >
+        <Image
+          src={imageUrl ?? PLACEHOLDER_IMAGE}
+          alt={name}
+          fill
+          sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 400px"
+          style={{ objectFit: 'cover', objectPosition: 'center top' }}
+          priority={priority}
+        />
+      </Box>
 
       <CardContent sx={mergeSx({ flex: 1, pt: 2 }, contentSx)}>
         <Typography

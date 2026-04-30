@@ -1,4 +1,5 @@
 import i18n from "i18next";
+import { isDev } from "@/shared/config/env";
 import { initReactI18next } from "react-i18next";
 import Backend from 'i18next-http-backend';
 
@@ -9,7 +10,7 @@ i18n
   .init({
     lng: "en", // текущий язык
     fallbackLng: "en", // язык по умолчанию
-    debug: process.env.NODE_ENV === "development",
+    debug: isDev,
     interpolation: {
       escapeValue: false // для React не нужно экранировать
     },

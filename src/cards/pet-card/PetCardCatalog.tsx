@@ -1,13 +1,26 @@
 'use client';
 
+import Image from 'next/image';
 import { Box, Chip, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { Link as RouterLink } from "@/shared/router";
 import { mergeSx } from "@/shared/ui/mergeSx";
-import type { Pet } from "@/release-hub/entities";
+
+const PLACEHOLDER_IMAGE = '/placeholder.svg';
+
+type PetCardCatalogData = {
+  id: string | number;
+  name: string;
+  imageUrl?: string;
+  ownerName?: string;
+  species: string;
+  generation?: string;
+};
 
 interface PetCardCatalogProps {
-  pet: Pet;
+  pet: PetCardCatalogData;
+  /** Pass true for above-the-fold cards (first ~4) to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   imageSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -15,6 +28,7 @@ interface PetCardCatalogProps {
 
 export const PetCardCatalog = ({
   pet,
+  priority = false,
   cardSx,
   imageSx,
   contentSx,
@@ -58,19 +72,13 @@ export const PetCardCatalog = ({
           imageSx
         )}
       >
-        <Box
-          component="img"
-          src={pet.imageUrl}
+        <Image
+          src={pet.imageUrl ?? PLACEHOLDER_IMAGE}
           alt={pet.name}
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            objectPosition: "center",
-          }}
+          fill
+          sizes="(max-width: 600px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          style={{ objectFit: 'contain', objectPosition: 'center' }}
+          priority={priority}
         />
       </Box>
 

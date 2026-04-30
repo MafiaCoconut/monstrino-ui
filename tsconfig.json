@@ -25,6 +25,9 @@
       "@cards/*": ["./src/cards/*"],
       "@widgets/*": ["./src/widgets/*"],
       "@features/*": ["./src/features/*"],
+      "@features/favorites": ["./src/features/favorites/index.ts"],
+      "@features/search": ["./src/features/search/index.ts"],
+      "@features/sorting": ["./src/features/sorting/index.ts"],
       "@entities/*": ["./src/entities/*"],
       "@shared/*": ["./src/shared/*"]
     }
@@ -37,5 +40,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "ui-old"]
+  "exclude": ["node_modules", "ui-old", "src/pages-for-future"]
 }

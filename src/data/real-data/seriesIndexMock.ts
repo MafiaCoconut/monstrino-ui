@@ -1,5 +1,5 @@
 // @ts-nocheck
-import type { Series, SeriesId } from '@/release-hub/entities';
+import type { SeriesId } from '@entities/series';
 import { characterMock } from '@/data/real-data/characterMock';
 import { exclusiveVendorMock } from '@/data/real-data/exclusiveVendorMock';
 import { releaseCharacterMock } from '@/data/real-data/releaseCharacterMock';
@@ -10,6 +10,7 @@ import { releaseSeriesLinkMock } from '@/data/real-data/releaseSeriesLinkMock';
 import { seriesMock } from '@/data/real-data/seriesMock';
 
 const toSeriesId = (value: string | number): SeriesId => `${value}` as SeriesId;
+type Series = any;
 
 const DEFAULT_FASHION_SETS = [
   ['Gothic Glam', 'Pastel Punk', 'Monster Chic', 'Dark Academia'],

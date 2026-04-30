@@ -7,8 +7,8 @@ import { releaseImageMock } from "@/data/real-data/releaseImageMock";
 import { releaseMock } from "@/data/real-data/releaseMock";
 import { releaseSeriesLinkMock } from "@/data/real-data/releaseSeriesLinkMock";
 import { seriesMock } from "@/data/real-data/seriesMock";
-import type { CharacterId } from "@/release-hub/entities";
-import type { CharacterIndexData } from "@/release-hub/entities/character-index";
+import type { CharacterId } from "@entities/character";
+import type { CharacterIndexData } from "@entities/character-index";
 
 const baseCharacterIndexMock: CharacterIndexData = {
   id: "draculaura" as CharacterId,

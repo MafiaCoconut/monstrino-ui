@@ -87,7 +87,7 @@ export function useSearchParams() {
         router.push(url, { scroll: options?.scroll });
       }
     },
-    [pathname, router, searchParams]
+    [pathname, router]
   );
 
   return [searchParams ?? new URLSearchParams(), setSearchParams] as const;

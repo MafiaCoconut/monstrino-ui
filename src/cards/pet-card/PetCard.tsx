@@ -1,11 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import {
   Avatar,
   Box,
   Card,
   CardContent,
-  CardMedia,
   Chip,
   Typography,
 } from "@mui/material";
@@ -13,11 +13,13 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import { Link as RouterLink } from "@/shared/router";
 import PetsIcon from "@mui/icons-material/Pets";
 import { mergeSx } from "@/shared/ui/mergeSx";
-import type { PetSummary } from "@/release-hub/entities";
+import type { PetSummary } from "@entities/pet";
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
 
 interface PetCardProps extends PetSummary {
+  /** Pass true for above-the-fold cards to boost LCP */
+  priority?: boolean;
   containerSx?: SxProps<Theme>;
   cardSx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
@@ -31,6 +33,7 @@ export const PetCard = ({
   ownerName,
   ownerImageUrl,
   imageUrl,
+  priority = false,
   containerSx,
   cardSx,
   mediaSx,
@@ -81,16 +84,13 @@ export const PetCard = ({
         <PetsIcon sx={{ fontSize: 16, color: "secondary.main" }} />
       </Box>
 
-      <CardMedia
-        component="div"
+      <Box
         sx={mergeSx(
           {
             height: 220,
             backgroundColor: "background.default",
-            backgroundImage: `url(${imageUrl ?? PLACEHOLDER_IMAGE})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
             position: "relative",
+            overflow: "hidden",
             "&::after": {
               content: '""',
               position: "absolute",
@@ -99,11 +99,21 @@ export const PetCard = ({
               right: 0,
               height: "40%",
               background: "linear-gradient(to top, rgba(20, 20, 32, 0.9) 0%, transparent 100%)",
+              zIndex: 1,
             },
           },
           mediaSx
         )}
-      />
+      >
+        <Image
+          src={imageUrl ?? PLACEHOLDER_IMAGE}
+          alt={name}
+          fill
+          sizes="(max-width: 600px) 50vw, (max-width: 900px) 33vw, 300px"
+          style={{ objectFit: "cover", objectPosition: "center" }}
+          priority={priority}
+        />
+      </Box>
 
       <CardContent sx={contentSx}>
         <Typography

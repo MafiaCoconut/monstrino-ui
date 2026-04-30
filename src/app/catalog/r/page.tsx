@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
-import ReleaseCatalog from '@/release-hub/Catalog/ReleaseCatalog';
+import { Suspense } from 'react';
+import ReleaseCatalog from '@/widgets/catalog/ReleaseCatalog';
 import { buildCatalogMetadata } from '@/shared/seo/catalogMetadata';
+import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -11,5 +14,18 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 }
 
 export default function Page() {
-  return <ReleaseCatalog />;
+  const siteUrl = getSiteUrl();
+  return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', url: `${siteUrl}/` },
+          { name: 'Releases', url: `${siteUrl}/catalog/r` },
+        ]}
+      />
+      <Suspense fallback={null}>
+        <ReleaseCatalog />
+      </Suspense>
+    </>
+  );
 }

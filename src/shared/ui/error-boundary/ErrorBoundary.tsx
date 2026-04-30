@@ -1,5 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
+import { reportError } from '@shared/observability';
+import { isDev } from '@shared/config/env';
 
 interface Props {
   children: ReactNode;
@@ -24,15 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
-
-    this.setState({
-      error,
-      errorInfo,
-    });
-
-    // Here you can log the error to an error reporting service
-    // Example: Sentry.captureException(error, { extra: errorInfo });
+    this.setState({ error, errorInfo });
+    reportError(error, errorInfo);
   }
 
   private handleReset = () => {
@@ -71,11 +66,11 @@ export class ErrorBoundary extends Component<Props, State> {
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '500px' }}>
-              We're sorry for the inconvenience. An unexpected error has occurred.
+              We&apos;re sorry for the inconvenience. An unexpected error has occurred.
               Please try refreshing the page or contact support if the problem persists.
             </Typography>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {isDev && this.state.error && (
               <Box
                 sx={{
                   mt: 3,

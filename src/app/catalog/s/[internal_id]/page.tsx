@@ -1,72 +1,72 @@
+import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import SeriesPage from '@/release-hub/Index/SeriesIndex';
-import { fetchSeries } from '@/shared/api/releaseHub.server';
-import { getSeriesSeo } from '@/shared/seo/releaseHub';
-import { SeriesStructuredData } from '@/shared/seo/StructuredData';
-import type { DetailSeoLink } from '@/shared/seo/DetailSeoContent';
-import { DetailDataHydrator } from '@/shared/data/DetailDataHydrator';
-import { seriesIndexByNumericId } from '@/data/real-data/seriesIndexMock';
+import { getSeriesById } from '@/shared/api/resources';
+import { isApiError } from '@/shared/api/http';
+import { seriesFromApiDto } from '@entities/series';
+import type { SeriesApiDto } from '@entities/series';
+import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { buildSeriesSchema } from '@/shared/seo/structuredData';
+import { buildSeriesDetailMetadata } from '@/shared/seo/detailMetadata';
+import { SeriesDetailView } from '@/widgets/detail';
+import SeriesIndex from '@/widgets/catalog/SeriesIndex';
+
 export const revalidate = 43200;
 
 type PageProps = {
   params: { internal_id: string } | Promise<{ internal_id: string }>;
 };
 
+async function getSeriesOrNotFound(id: string): Promise<SeriesApiDto> {
+  try {
+    return await getSeriesById(id, { context: 'server' });
+  } catch (err) {
+    if (isApiError(err) && err.status === 404) {
+      notFound();
+    }
+    throw err;
+  }
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { internal_id } = await params;
-  const apiData = await fetchSeries(internal_id);
-  const seo = getSeriesSeo(apiData, internal_id);
-  return {
-    title: seo.title,
-    description: seo.description,
-    alternates: {
-      canonical: seo.canonical,
-    },
-  };
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/catalog/s/${internal_id}`;
+  if (useMockData) {
+    return {
+      title: `Series ${internal_id} | Monstrino`,
+      description: `Series profile ${internal_id} in mock mode`,
+      alternates: { canonical },
+    };
+  }
+  const dto = await getSeriesOrNotFound(internal_id);
+  const model = seriesFromApiDto(dto);
+  return buildSeriesDetailMetadata(model, canonical, internal_id);
 }
 
 export default async function Page({ params }: PageProps) {
+  if (useMockData) {
+    return <SeriesIndex />;
+  }
   const { internal_id } = await params;
-  const apiData = await fetchSeries(internal_id);
-  const fallback = seriesIndexByNumericId.get(internal_id);
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/catalog/s/${internal_id}`;
+  const dto = await getSeriesOrNotFound(internal_id);
+  const model = seriesFromApiDto(dto);
+  const displayName = model.displayName ?? model.name ?? dto.display_name ?? dto.name ?? `Series ${internal_id}`;
 
-  if (!apiData && !fallback) {
-    notFound();
-  }
-
-  const seo = getSeriesSeo(apiData, internal_id);
-  const seriesFallback = fallback ?? null;
-  const apiRecord = apiData as any;
-  const description =
-    apiRecord?.description ||
-    seriesFallback?.description ||
-    seriesFallback?.concept ||
-    seriesFallback?.themeDescription ||
-    seo.description;
-
-  const links: DetailSeoLink[] = [];
-  if (seriesFallback?.characters?.length) {
-    seriesFallback.characters.slice(0, 3).forEach((character: any) => {
-      if (!character?.id) return;
-      links.push({
-        href: `/catalog/c/${character.id}`,
-        label: character.name ? `Character: ${character.name}` : `Character ${character.id}`,
-      });
-    });
-  }
-  links.push({ href: '/catalog/s', label: 'Browse all series' });
+  const breadcrumbs = [
+    { name: 'Home', url: `${siteUrl}/` },
+    { name: 'Series', url: `${siteUrl}/catalog/s` },
+    { name: displayName, url: canonical },
+  ];
 
   return (
     <>
-      <SeriesStructuredData
-        name={seo.title}
-        description={description}
-        url={seo.canonical}
-        relatedLinks={links}
-      />
-      <DetailDataHydrator type="series" id={internal_id} initialData={apiData} />
-      <SeriesPage />
+      <JsonLd schema={buildSeriesSchema(model, canonical)} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <SeriesDetailView id={internal_id} initialModel={model} />
     </>
   );
 }

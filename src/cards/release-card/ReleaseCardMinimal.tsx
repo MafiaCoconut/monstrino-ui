@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Link as RouterLink } from '@/shared/router';
 import { Box, Typography, Chip } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
@@ -43,6 +44,8 @@ interface ReleaseCardMinimalProps {
   onMouseLeave: () => void;
   size?: 'compact' | 'full' | 'reduced';
   enableHoverLift?: boolean;
+  /** Pass true for above-the-fold cards to boost LCP */
+  priority?: boolean;
   containerSx?: SxProps<Theme>;
   cardSx?: SxProps<Theme>;
   imageSx?: SxProps<Theme>;
@@ -68,6 +71,7 @@ const ReleaseCardMinimal: React.FC<ReleaseCardMinimalProps> = ({
   onMouseLeave,
   size = 'compact',
   enableHoverLift = false,
+  priority = false,
   containerSx,
   cardSx,
   imageSx,
@@ -146,36 +150,14 @@ const ReleaseCardMinimal: React.FC<ReleaseCardMinimalProps> = ({
             imageSx
           )}
         >
-          <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {doll.imageUrl ? (
-            <Box
-              component="img"
-              src={doll.imageUrl}
-              alt={doll.variant ?? doll.character}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                objectPosition: 'center',
-              }}
-            />
-          ) : (
-            <svg
-              viewBox="0 0 120 180"
-              style={{ width: '60%', height: '60%' }}
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <ellipse cx="60" cy="30" rx="22" ry="26" fill={tokens.colors.secondary} />
-              <path
-                d="M38 56 C38 56 35 80 38 100 L44 140 L40 175 L50 178 L55 145 L60 178 L65 145 L70 178 L80 175 L76 140 L82 100 C85 80 82 56 82 56 Z"
-                fill={tokens.colors.secondary}
-              />
-              <path d="M38 60 L25 90 L30 92 L40 70" fill={tokens.colors.secondary} />
-              <path d="M82 60 L95 90 L90 92 L80 70" fill={tokens.colors.secondary} />
-            </svg>
-          )}
-          </Box>
+          <Image
+            src={doll.imageUrl ?? '/placeholder.svg'}
+            alt={doll.variant ?? doll.character}
+            fill
+            sizes="(max-width: 600px) 50vw, 220px"
+            style={{ objectFit: 'contain', objectPosition: 'center' }}
+            priority={priority}
+          />
         </Box>
 
         {/* Content */}

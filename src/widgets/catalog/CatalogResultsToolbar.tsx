@@ -3,15 +3,12 @@ import {
   Box,
   Button,
   Chip,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Typography,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { mergeSx } from '@/shared/ui/mergeSx';
+import { SortSelect } from '@features/sorting';
 
 export type CatalogSortOption = {
   value: string;
@@ -91,8 +88,10 @@ export const CatalogResultsToolbar: React.FC<CatalogResultsToolbarProps> = ({
       </Typography>
     </Box>
 
-    <FormControl
-      size="small"
+    <SortSelect
+      value={sortBy}
+      options={sortOptions}
+      onChange={onSortChange}
       sx={mergeSx(
         {
           minWidth: { xs: '100%', sm: 160 },
@@ -100,25 +99,6 @@ export const CatalogResultsToolbar: React.FC<CatalogResultsToolbarProps> = ({
         },
         formControlSx
       )}
-    >
-      <InputLabel sx={{ fontSize: { xs: '0.8125rem', sm: '0.85rem' } }}>Sort By</InputLabel>
-      <Select
-        value={sortBy}
-        label="Sort By"
-        onChange={(e) => onSortChange(String(e.target.value))}
-        sx={{
-          '& .MuiSelect-select': {
-            py: { xs: 0.75, sm: 1 },
-            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
-          },
-        }}
-      >
-        {sortOptions.map((option) => (
-          <MenuItem key={option.value} value={option.value}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    />
   </Box>
 );

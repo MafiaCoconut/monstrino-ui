@@ -1,14 +1,31 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Link as RouterLink } from '@/shared/router';
 import { Box, Typography, Chip } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { mergeSx } from '@/shared/ui/mergeSx';
-import { type Release } from '@/release-hub/entities';
+import { useFavorites, FavoriteButton } from '@features/favorites';
+
+const PLACEHOLDER_IMAGE = '/placeholder.svg';
+
+type ReleaseCardCatalogData = {
+  id: string | number;
+  characterName: string;
+  seriesName: string;
+  releaseDate?: string;
+  generation?: string;
+  packSize?: number;
+  releaseTypes?: string[];
+  tags?: string[];
+  imageUrl?: string;
+};
 
 interface ReleaseCardCatalogProps {
-  release: Release;
+  release: ReleaseCardCatalogData;
+  /** Pass true for above-the-fold cards (first ~4) to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   imageSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -16,10 +33,20 @@ interface ReleaseCardCatalogProps {
 
 const ReleaseCardCatalog: React.FC<ReleaseCardCatalogProps> = ({
   release,
+  priority = false,
   cardSx,
   imageSx,
   contentSx,
 }) => {
+  const { isFavorited, toggle } = useFavorites();
+  const favorited = isFavorited(String(release.id));
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle(String(release.id));
+  };
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Unknown';
     const date = new Date(dateStr);
@@ -68,20 +95,25 @@ const ReleaseCardCatalog: React.FC<ReleaseCardCatalogProps> = ({
           imageSx
         )}
       >
-        <Box
-          component="img"
-          src={release.imageUrl}
+        <Image
+          src={release.imageUrl ?? PLACEHOLDER_IMAGE}
           alt={release.characterName}
+          fill
+          sizes="(max-width: 600px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          style={{ objectFit: 'contain', objectPosition: 'center' }}
+          priority={priority}
+        />
+        {/* Favorite button */}
+        <Box
           sx={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            objectPosition: 'center',
+            top: { xs: 4, sm: 6 },
+            right: { xs: 4, sm: 6 },
+            zIndex: 1,
           }}
-        />
+        >
+          <FavoriteButton isFavorited={favorited} onToggle={handleFavoriteClick} />
+        </Box>
       </Box>
 
       {/* Card Content */}

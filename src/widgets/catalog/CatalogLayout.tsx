@@ -30,3 +30,5 @@ export const CatalogLayout: React.FC<CatalogLayoutProps> = ({
     {children}
   </Box>
 );
+
+export default CatalogLayout;

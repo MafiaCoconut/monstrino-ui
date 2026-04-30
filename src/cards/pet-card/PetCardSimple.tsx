@@ -1,10 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import {
   Box,
   Card,
   CardContent,
-  CardMedia,
   Chip,
   Typography,
 } from "@mui/material";
@@ -22,6 +22,8 @@ interface PetCardSimpleProps {
   link?: string;
   to?: string;
   rarity?: string;
+  /** Pass true for above-the-fold cards to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -34,6 +36,7 @@ export const PetCardSimple = ({
   link = "#",
   to,
   rarity,
+  priority = false,
   cardSx,
   mediaSx,
   contentSx,
@@ -79,17 +82,13 @@ export const PetCardSimple = ({
         <PetsIcon sx={{ fontSize: 16, color: "secondary.main" }} />
       </Box>
 
-      <CardMedia
-        component="div"
+      <Box
         sx={mergeSx(
           {
             height: 180,
             backgroundColor: "#FFFFFF",
-            backgroundImage: `url(${imageUrl ?? PLACEHOLDER_IMAGE})`,
-            backgroundSize: "contain",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
             position: "relative",
+            overflow: "hidden",
             "&::after": {
               content: '""',
               position: "absolute",
@@ -98,11 +97,21 @@ export const PetCardSimple = ({
               right: 0,
               height: "40%",
               background: "linear-gradient(to top, rgba(20, 20, 32, 0.9) 0%, transparent 100%)",
+              zIndex: 1,
             },
           },
           mediaSx
         )}
-      />
+      >
+        <Image
+          src={imageUrl ?? PLACEHOLDER_IMAGE}
+          alt={name}
+          fill
+          sizes="(max-width: 600px) 50vw, (max-width: 900px) 33vw, 250px"
+          style={{ objectFit: "contain", objectPosition: "center" }}
+          priority={priority}
+        />
+      </Box>
 
       <CardContent sx={contentSx}>
         <Typography

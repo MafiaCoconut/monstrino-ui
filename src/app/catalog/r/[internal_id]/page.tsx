@@ -1,113 +1,74 @@
+import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import ReleasePage from '@/release-hub/Index/ReleaseIndex';
-import { fetchRelease } from '@/shared/api/releaseHub.server';
-import { getReleaseSeo } from '@/shared/seo/releaseHub';
-import { ProductStructuredData } from '@/shared/seo/StructuredData';
-import type { DetailSeoLink } from '@/shared/seo/DetailSeoContent';
-import { DetailDataHydrator } from '@/shared/data/DetailDataHydrator';
-import { releaseIndexMock } from '@/data/real-data/releaseIndexMock';
-import { characterMock } from '@/data/real-data/characterMock';
-import { seriesMock } from '@/data/real-data/seriesMock';
+import { getReleaseById } from '@/shared/api/resources';
+import { isApiError } from '@/shared/api/http';
+import { releaseFromApiDto } from '@entities/release';
+import type { ReleaseApiDto } from '@entities/release';
+import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { buildReleaseSchema } from '@/shared/seo/structuredData';
+import { buildReleaseDetailMetadata } from '@/shared/seo/detailMetadata';
+import { ReleaseDetailView } from '@/widgets/detail';
+import ReleaseIndex from '@/widgets/catalog/ReleaseIndex';
+
 export const revalidate = 43200;
-
-const normalizeName = (value?: string | null) => value?.trim().toLowerCase() ?? '';
-
-const characterIdByName = new Map<string, number>();
-characterMock.forEach((character: any) => {
-  const name = normalizeName(character?.display_name ?? character?.name);
-  if (name && !characterIdByName.has(name)) {
-    characterIdByName.set(name, Number(character.id));
-  }
-});
-
-const seriesIdByName = new Map<string, number>();
-seriesMock.forEach((series: any) => {
-  const name = normalizeName(series?.display_name ?? series?.name);
-  if (name && !seriesIdByName.has(name)) {
-    seriesIdByName.set(name, Number(series.id));
-  }
-});
 
 type PageProps = {
   params: { internal_id: string } | Promise<{ internal_id: string }>;
 };
 
+async function getReleaseOrNotFound(id: string): Promise<ReleaseApiDto> {
+  try {
+    return await getReleaseById(id, { context: 'server' });
+  } catch (err) {
+    if (isApiError(err) && err.status === 404) {
+      notFound();
+    }
+    throw err;
+  }
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { internal_id } = await params;
-  const apiData = await fetchRelease(internal_id);
-  const seo = getReleaseSeo(apiData, internal_id);
-  return {
-    title: seo.title,
-    description: seo.description,
-    alternates: {
-      canonical: seo.canonical,
-    },
-  };
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/catalog/r/${internal_id}`;
+  if (useMockData) {
+    return {
+      title: `Release ${internal_id} | Monstrino`,
+      description: `Release profile ${internal_id} in mock mode`,
+      alternates: { canonical },
+    };
+  }
+  const dto = await getReleaseOrNotFound(internal_id);
+  const model = releaseFromApiDto(dto);
+  return buildReleaseDetailMetadata(model, canonical, internal_id);
 }
 
 export default async function Page({ params }: PageProps) {
+  if (useMockData) {
+    return <ReleaseIndex />;
+  }
   const { internal_id } = await params;
-  const apiData = await fetchRelease(internal_id);
-  const fallback = releaseIndexMock.find((release) => `${release.id}` === `${internal_id}`);
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/catalog/r/${internal_id}`;
+  const dto = await getReleaseOrNotFound(internal_id);
+  const model = releaseFromApiDto(dto);
 
-  if (!apiData && !fallback) {
-    notFound();
-  }
-
-  const seo = getReleaseSeo(apiData, internal_id);
-  const releaseFallback = fallback ?? null;
-  const apiRecord = apiData as any;
-  const characterName = apiRecord?.character_name ?? apiRecord?.characterName ?? releaseFallback?.characterName;
-  const seriesName = apiRecord?.series_name ?? apiRecord?.seriesName ?? releaseFallback?.seriesName;
-  const apiCharacterId = apiRecord?.character_id ?? apiRecord?.characterId;
-  const apiSeriesId = apiRecord?.series_id ?? apiRecord?.seriesId;
-  const characterId =
-    apiCharacterId ??
-    (characterName ? characterIdByName.get(normalizeName(characterName)) : undefined);
-  const seriesId =
-    apiSeriesId ??
-    (seriesName ? seriesIdByName.get(normalizeName(seriesName)) : undefined);
-
-  const links: DetailSeoLink[] = [];
-  if (characterId) {
-    links.push({
-      href: `/catalog/c/${characterId}`,
-      label: characterName ? `Character: ${characterName}` : 'Character profile',
-    });
-  }
-  if (seriesId) {
-    links.push({
-      href: `/catalog/s/${seriesId}`,
-      label: seriesName ? `Series: ${seriesName}` : 'Series details',
-    });
-  }
-  links.push({ href: '/catalog/r', label: 'Browse all releases' });
-
-  const summaryParts = [
-    seriesName ? `Part of the ${seriesName} series` : null,
-    characterName ? `featuring ${characterName}` : null,
-    releaseFallback?.year ? `released in ${releaseFallback.year}` : null,
-  ].filter(Boolean) as string[];
-
-  const summaryText = summaryParts.length > 0 ? `${summaryParts.join(' ')}.` : null;
-  const description =
-    apiRecord?.subtitle ||
-    releaseFallback?.subtitle ||
-    summaryText ||
-    apiRecord?.description ||
-    seo.description;
+  const breadcrumbs = [
+    { name: 'Home', url: `${siteUrl}/` },
+    { name: 'Releases', url: `${siteUrl}/catalog/r` },
+    {
+      name: model.displayName ?? model.name ?? dto.display_name ?? dto.name ?? `Release ${internal_id}`,
+      url: canonical,
+    },
+  ];
 
   return (
     <>
-      <ProductStructuredData
-        name={seo.title}
-        description={description}
-        url={seo.canonical}
-        relatedLinks={links}
-      />
-      <DetailDataHydrator type="release" id={internal_id} initialData={apiData} />
-      <ReleasePage />
+      <JsonLd schema={buildReleaseSchema(model, canonical)} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <ReleaseDetailView id={internal_id} initialModel={model} />
     </>
   );
 }

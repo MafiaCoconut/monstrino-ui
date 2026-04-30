@@ -1,10 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import {
   Box,
   Card,
   CardContent,
-  CardMedia,
   Typography,
 } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
@@ -19,6 +19,8 @@ interface PetOwnerCardProps {
   role?: string;
   imageUrl?: string;
   accentColor?: string;
+  /** Pass true for above-the-fold cards to boost LCP */
+  priority?: boolean;
   cardSx?: SxProps<Theme>;
   mediaSx?: SxProps<Theme>;
   contentSx?: SxProps<Theme>;
@@ -30,6 +32,7 @@ export const PetOwnerCard = ({
   role,
   imageUrl,
   accentColor = "#FF1493",
+  priority = false,
   cardSx,
   mediaSx,
   contentSx,
@@ -61,16 +64,13 @@ export const PetOwnerCard = ({
         cardSx
       )}
     >
-      <CardMedia
-        component="div"
+      <Box
         sx={mergeSx(
           {
             height: 200,
             backgroundColor: "background.default",
-            backgroundImage: `url(${imageUrl ?? PLACEHOLDER_IMAGE})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
             position: "relative",
+            overflow: "hidden",
             "&::after": {
               content: '""',
               position: "absolute",
@@ -79,11 +79,21 @@ export const PetOwnerCard = ({
               right: 0,
               height: "40%",
               background: "linear-gradient(to top, rgba(20, 20, 32, 1) 0%, transparent 100%)",
+              zIndex: 1,
             },
           },
           mediaSx
         )}
-      />
+      >
+        <Image
+          src={imageUrl ?? PLACEHOLDER_IMAGE}
+          alt={name}
+          fill
+          sizes="200px"
+          style={{ objectFit: "cover", objectPosition: "center top" }}
+          priority={priority}
+        />
+      </Box>
 
       <CardContent sx={mergeSx({ pt: 0, mt: -3, position: "relative", zIndex: 2, pb: 2 }, contentSx)}>
         <Typography

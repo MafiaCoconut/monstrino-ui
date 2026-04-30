@@ -1,4 +1,4 @@
-import SupportInfo from '@/release-hub/Info/SupportInfo';
+import SupportInfo from '@/widgets/info/SupportInfo';
 
 export const dynamic = 'force-static';
 

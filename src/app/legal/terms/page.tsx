@@ -1,4 +1,4 @@
-import TermsInfo from '@/release-hub/Info/TermsInfo';
+import TermsInfo from '@/widgets/info/TermsInfo';
 
 export const dynamic = 'force-static';
 

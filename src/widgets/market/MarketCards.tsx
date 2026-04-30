@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Avatar,
   Box,
@@ -350,10 +350,6 @@ export const MarketOverview = ({
 }) => {
   const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'));
   const [expanded, setExpanded] = useState(!isMobile);
-
-  useEffect(() => {
-    setExpanded(!isMobile);
-  }, [isMobile]);
 
   return (
     <Box sx={{ backgroundColor: colors.card, border: `1px solid ${colors.cardBorder}`, borderRadius: 2, p: 2, mb: 2 }}>
