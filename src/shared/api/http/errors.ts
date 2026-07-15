@@ -58,12 +58,9 @@ export class ValidationError extends Error {
  * resource payload inside it.
  */
 export class MalformedApiResponseError extends Error {
-  readonly body?: unknown;
-
-  constructor(message: string, body?: unknown) {
+  constructor(message: string) {
     super(message);
     this.name = "MalformedApiResponseError";
-    this.body = body;
   }
 }
 

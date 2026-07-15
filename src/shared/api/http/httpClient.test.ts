@@ -98,6 +98,14 @@ describe("httpGet — canonical envelope parsing", () => {
     await expect(httpGet(PATH, OPT)).rejects.toThrow(MalformedApiResponseError);
   });
 
+  it("does not retain the offending response body on malformed-envelope errors", async () => {
+    respondWith({ status: "broken", access_token: "secret-token" });
+    const err = await httpGet(PATH, OPT).catch((e) => e);
+    expect(err).toBeInstanceOf(MalformedApiResponseError);
+    expect(Object.prototype.hasOwnProperty.call(err, "body")).toBe(false);
+    expect(String(err)).not.toContain("secret-token");
+  });
+
   it("never passes raw body through for an unrecognized 200 shape", async () => {
     respondWith({ items: [], total: 0 });
     await expect(httpGet(PATH, OPT)).rejects.toThrow(MalformedApiResponseError);

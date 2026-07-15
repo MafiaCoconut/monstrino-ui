@@ -91,34 +91,28 @@ function buildApiErrorFromEnvelope(
  */
 function parseEnvelope<T>(json: unknown, httpStatus: number): T {
   if (json == null || typeof json !== "object" || Array.isArray(json)) {
-    throw new MalformedApiResponseError("API response is not an envelope object", json);
+    throw new MalformedApiResponseError("API response is not an envelope object");
   }
 
   const obj = json as Record<string, unknown>;
 
   if (!("status" in obj)) {
-    throw new MalformedApiResponseError("API envelope is missing 'status'", json);
+    throw new MalformedApiResponseError("API envelope is missing 'status'");
   }
   if (!isEnvelopeStatus(obj.status)) {
-    throw new MalformedApiResponseError(
-      `API envelope has unknown status: ${String(obj.status)}`,
-      json,
-    );
+    throw new MalformedApiResponseError(`API envelope has unknown status: ${String(obj.status)}`);
   }
 
   if (obj.status === "error") {
     const error = readErrorBody(obj.error);
     if (!error) {
-      throw new MalformedApiResponseError("API error envelope is missing 'error' body", json);
+      throw new MalformedApiResponseError("API error envelope is missing 'error' body");
     }
     throw buildApiErrorFromEnvelope(obj, error, httpStatus);
   }
 
   if (!("data" in obj) || obj.data === undefined) {
-    throw new MalformedApiResponseError(
-      `API ${obj.status} envelope is missing 'data'`,
-      json,
-    );
+    throw new MalformedApiResponseError(`API ${obj.status} envelope is missing 'data'`);
   }
 
   return obj.data as T;
