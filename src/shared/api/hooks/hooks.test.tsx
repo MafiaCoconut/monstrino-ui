@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { useRelease, useReleasesList } from "./useRelease";
+import { useRelease, useReleasesList, useReleasesPage } from "./useRelease";
 import { useSeries, useSeriesList } from "./useSeries";
 import { useCharacter, useCharactersList } from "./useCharacter";
 import { usePet, usePetsList } from "./usePet";
@@ -21,12 +21,15 @@ function wrapper() {
 // ─── Release hooks ────────────────────────────────────────────────────────────
 
 describe("useRelease", () => {
-  it("fetches and maps a release by id", async () => {
-    const { result } = renderHook(() => useRelease("1"), { wrapper: wrapper() });
+  it("fetches and maps a release by slug", async () => {
+    const { result } = renderHook(
+      () => useRelease("frankie-stein-basic-000000000001"),
+      { wrapper: wrapper() },
+    );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.id).toBe("1");
-    expect(result.current.data?.name).toBe("Frankie Stein Basic");
-    expect(result.current.data?.generation).toBe("G1");
+    expect(result.current.data?.title).toBe("Frankie Stein Basic");
+    expect(result.current.data?.slug).toBe("frankie-stein-basic-000000000001");
   });
 
   it("is disabled when id is undefined", () => {
@@ -35,9 +38,20 @@ describe("useRelease", () => {
     expect(result.current.fetchStatus).toBe("idle");
   });
 
-  it("enters error state for unknown id", async () => {
-    const { result } = renderHook(() => useRelease("9999"), { wrapper: wrapper() });
+  it("enters error state for unknown slug", async () => {
+    const { result } = renderHook(() => useRelease("missing-slug"), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe("useReleasesPage", () => {
+  it("fetches and maps a release page", async () => {
+    const { result } = renderHook(() => useReleasesPage({ page: 1, pageSize: 12 }), {
+      wrapper: wrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.items).toHaveLength(2);
+    expect(result.current.data?.total).toBe(2);
   });
 });
 
@@ -46,7 +60,7 @@ describe("useReleasesList", () => {
     const { result } = renderHook(() => useReleasesList(), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(2);
-    expect(result.current.data?.[0].name).toBe("Frankie Stein Basic");
+    expect(result.current.data?.[0].title).toBe("Frankie Stein Basic");
   });
 });
 

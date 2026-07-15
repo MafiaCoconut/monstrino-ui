@@ -7,18 +7,57 @@ export const handlers = [
   // ─── Releases ──────────────────────────────────────────────────────────────
 
   http.get(`${BASE}/releases`, () =>
-    HttpResponse.json({ success: true, data: MOCK_RELEASES }),
+    HttpResponse.json({
+      status: "success",
+      data: {
+        items: MOCK_RELEASES,
+        total: MOCK_RELEASES.length,
+        page: 1,
+        page_size: MOCK_RELEASES.length,
+      },
+      request_id: "req-test",
+      correlation_id: null,
+      trace_id: null,
+      meta: {
+        service: "catalog-api-service",
+        version: "v1",
+        timestamp: "2026-07-15T00:00:00Z",
+      },
+    }),
   ),
 
-  http.get(`${BASE}/releases/:id`, ({ params }) => {
-    const release = MOCK_RELEASES.find((r) => String(r.id) === params.id);
+  http.get(`${BASE}/releases/:slug`, ({ params }) => {
+    const release = MOCK_RELEASES.find((r) => r.slug === params.slug);
     if (!release) {
       return HttpResponse.json(
-        { success: false, error: { code: "NOT_FOUND", message: "Release not found" } },
+        {
+          status: "error",
+          data: null,
+          error: { code: "NOT_FOUND", message: "Release not found", retryable: false },
+          request_id: "req-test",
+          correlation_id: null,
+          trace_id: null,
+          meta: {
+            service: "catalog-api-service",
+            version: "v1",
+            timestamp: "2026-07-15T00:00:00Z",
+          },
+        },
         { status: 404 },
       );
     }
-    return HttpResponse.json({ success: true, data: release });
+    return HttpResponse.json({
+      status: "success",
+      data: release,
+      request_id: "req-test",
+      correlation_id: null,
+      trace_id: null,
+      meta: {
+        service: "catalog-api-service",
+        version: "v1",
+        timestamp: "2026-07-15T00:00:00Z",
+      },
+    });
   }),
 
   // ─── Series ────────────────────────────────────────────────────────────────

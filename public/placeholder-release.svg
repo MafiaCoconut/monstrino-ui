@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640" role="img" aria-labelledby="title desc">
+  <title id="title">Release image placeholder</title>
+  <desc id="desc">Simple placeholder card for releases without an image.</desc>
+  <rect width="480" height="640" fill="#f6f1fb"/>
+  <rect x="48" y="48" width="384" height="544" rx="28" fill="#ffffff" stroke="#d8c8ef" stroke-width="6"/>
+  <circle cx="240" cy="210" r="84" fill="#eadff8"/>
+  <path d="M150 430c20-70 85-110 140-110s120 40 140 110" fill="#eadff8"/>
+  <rect x="120" y="492" width="240" height="18" rx="9" fill="#d5c2ef"/>
+  <rect x="154" y="528" width="172" height="18" rx="9" fill="#e5d8f5"/>

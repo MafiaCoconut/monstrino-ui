@@ -1,6 +1,4 @@
 'use client';
-
-import React from 'react';
 import Image from 'next/image';
 import { Link as RouterLink } from '@/shared/router';
 import {
@@ -14,19 +12,16 @@ import {
 import type { SxProps, Theme } from '@mui/material/styles';
 import { mergeSx } from '@/shared/ui/mergeSx';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 
 const PLACEHOLDER_IMAGE = '/placeholder.svg';
 
 interface ReleaseCardSpotlightProps {
-  id: string | number;
-  name: string;
-  characterName: string;
-  seriesName: string;
+  slug: string;
+  title: string;
+  code: string;
   year?: number;
   imageUrl?: string;
-  price?: string;
-  isExclusive?: boolean;
+  chipLabel?: string;
   /** Pass true for above-the-fold spotlight cards to boost LCP */
   priority?: boolean;
   cardSx?: SxProps<Theme>;
@@ -35,14 +30,12 @@ interface ReleaseCardSpotlightProps {
 }
 
 const ReleaseCardSpotlight = ({
-  id,
-  name,
-  characterName,
-  seriesName,
+  slug,
+  title,
+  code,
   year,
   imageUrl,
-  price,
-  isExclusive,
+  chipLabel,
   priority = false,
   cardSx,
   mediaSx,
@@ -51,7 +44,7 @@ const ReleaseCardSpotlight = ({
   return (
     <Card
       component={RouterLink}
-      to={`/catalog/r/${id}`}
+      to={`/catalog/r/${slug}`}
       sx={mergeSx(
         {
           display: 'flex',
@@ -87,24 +80,6 @@ const ReleaseCardSpotlight = ({
         <FavoriteBorderIcon fontSize="small" />
       </IconButton>
 
-      {isExclusive && (
-        <Chip
-          label="Exclusive"
-          size="small"
-          icon={<LocalOfferIcon sx={{ fontSize: 14 }} />}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            left: 8,
-            zIndex: 10,
-            backgroundColor: 'secondary.main',
-            color: 'secondary.contrastText',
-            fontWeight: 600,
-            fontSize: '0.7rem',
-          }}
-        />
-      )}
-
       <Box
         sx={mergeSx(
           {
@@ -128,7 +103,7 @@ const ReleaseCardSpotlight = ({
       >
         <Image
           src={imageUrl ?? PLACEHOLDER_IMAGE}
-          alt={name}
+          alt={title}
           fill
           sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 400px"
           style={{ objectFit: 'cover', objectPosition: 'center top' }}
@@ -148,7 +123,7 @@ const ReleaseCardSpotlight = ({
             letterSpacing: '0.05em',
           }}
         >
-          {characterName}
+          {code}
         </Typography>
         <Typography
           variant="h6"
@@ -163,12 +138,12 @@ const ReleaseCardSpotlight = ({
             overflow: 'hidden',
           }}
         >
-          {name}
+          {title}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip
-              label={seriesName}
+              label={chipLabel ?? slug}
               size="small"
               sx={{
                 backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -182,11 +157,6 @@ const ReleaseCardSpotlight = ({
               </Typography>
             )}
           </Box>
-          {price && (
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'secondary.main' }}>
-              {price}
-            </Typography>
-          )}
         </Box>
       </CardContent>
     </Card>

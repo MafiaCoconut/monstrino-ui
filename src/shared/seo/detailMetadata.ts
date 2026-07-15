@@ -62,17 +62,13 @@ export function buildReleaseDetailMetadata(
   canonical: string,
   id: string,
 ): Metadata {
-  const title = model.displayName || model.name || `Release ${id}`;
+  const title = model.title || `Release ${id}`;
   const description =
-    model.description ||
-    model.subtitle ||
-    `Details and release information for ${title}.`;
+    model.description || `Details and release information for ${title}.`;
   const keywords = [
-    model.characterName,
-    model.seriesName,
-    model.generation,
+    model.code,
+    model.mpn,
     model.year ? String(model.year) : undefined,
-    ...model.releaseTypes,
     'Monster High',
     'collectible doll',
     'release',
@@ -82,7 +78,7 @@ export function buildReleaseDetailMetadata(
     title,
     description,
     canonical,
-    imageUrl: model.imageUrl,
+    imageUrl: model.primaryImageUrl,
     updatedAt: model.updatedAt,
     keywords,
     // Next.js Open Graph type union doesn't include "product".

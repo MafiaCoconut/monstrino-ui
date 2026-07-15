@@ -22,22 +22,17 @@ import PeopleIcon from "@mui/icons-material/People";
 import PetsIcon from "@mui/icons-material/Pets";
 
 import heroBanner from "@/assets/hero-banner.jpg";
-import { releaseIndexMock } from "@/data/real-data/releaseIndexMock";
 import { seriesIndexMock } from "@/data/real-data/seriesIndexMock";
 import { characterIndexMocks, characterIndexMockById } from "@/data/real-data/CharacterIndexMock";
 import { characterMock } from "@/data/real-data/characterMock";
 import { petIndexMock } from "@/data/real-data/petIndexMock";
+import { useReleasesPage } from "@/shared/api/hooks";
 import type {
   CharacterId,
   CharacterSummary,
   Pet,
-  PetId,
   PetSummary,
-  Release,
-  ReleaseId,
-  ReleaseSummary,
   Series,
-  SeriesId,
   SeriesSummary,
 } from "@/shared/legacy-types";
 import { ReleaseCardSpotlight } from "@cards/release-card";
@@ -59,8 +54,6 @@ const characterSlugToNumericId = new Map<string, number>(
   characterMock.map((char) => [char.name, char.id])
 );
 
-// Use pre-built index mocks directly from real-data
-const releaseModels: Release[] = releaseIndexMock;
 const seriesModels: Series[] = seriesIndexMock;
 const petModels: Pet[] = petIndexMock;
 
@@ -75,15 +68,10 @@ const characterModels: CharacterSummary[] = characterIndexMocks.map((char, index
 }));
 
 const stats = {
-  totalReleases: "1000+",
   totalCharacters: 127,
   totalSeries: seriesModels.length,
   totalPets: petModels.length,
 };
-
-const featuredReleases: ReleaseSummary[] = [...releaseModels]
-  .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
-  .slice(0, 6);
 
 // Popular characters - the iconic "Main 6" from Monster High G1 lineup
 const popularCharacterSlugs = [
@@ -264,6 +252,9 @@ export const HeroSection = () => {
 };
 
 export const StatsSection = () => {
+  const { data } = useReleasesPage({ page: 1, pageSize: 1 });
+  const totalReleases = data?.total ?? "Live";
+
   return (
     <Container
       maxWidth="xl"
@@ -275,7 +266,7 @@ export const StatsSection = () => {
     >
       <Grid container spacing={{ xs: 1.5, sm: 2.5 }}>
         {[
-          { icon: <CollectionsIcon />, value: stats.totalReleases, label: "Releases", color: "#FF1493", href: "/catalog/r" },
+          { icon: <CollectionsIcon />, value: totalReleases, label: "Releases", color: "#FF1493", href: "/catalog/r" },
           { icon: <PeopleIcon />, value: stats.totalCharacters, label: "Characters", color: "#00D4FF", href: "/catalog/c" },
           { icon: <CategoryIcon />, value: stats.totalSeries, label: "Series", color: "#9B59B6", href: "/catalog/s" },
           { icon: <PetsIcon />, value: stats.totalPets, label: "Pets", color: "#14B8A6", href: "/catalog/p" },
@@ -394,6 +385,9 @@ const SectionHeader = ({
 
 
 export const FeaturedReleasesSection = () => {
+  const { data, isPending, isError } = useReleasesPage({ page: 1, pageSize: 6 });
+  const featuredReleases = data?.items ?? [];
+
   return (
     <Box sx={{ mt: 5 }}>
       <SectionHeader kicker="Latest Drops" title="Featured Releases" actionLink="/catalog/r" />
@@ -410,10 +404,33 @@ export const FeaturedReleasesSection = () => {
           },
         }}
       >
+        {isPending ? (
+          <Typography variant="body2" color="text.secondary">
+            Loading public releases...
+          </Typography>
+        ) : null}
+
+        {isError ? (
+          <Typography variant="body2" color="text.secondary">
+            Public releases are temporarily unavailable.
+          </Typography>
+        ) : null}
+
+        {!isPending && !isError && featuredReleases.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            No public releases yet.
+          </Typography>
+        ) : null}
+
         {featuredReleases.map((item) => (
           <Box key={item.id} sx={{ minWidth: 260, maxWidth: 260 }}>
             <ReleaseCardSpotlight
-              {...item}
+              slug={item.slug}
+              title={item.title}
+              code={item.code}
+              year={item.year}
+              imageUrl={item.primaryImageUrl}
+              chipLabel={item.mpn ?? item.slug}
               cardSx={homepageCardLayout.spotlight.cardSx}
               mediaSx={homepageCardLayout.spotlight.mediaSx}
               contentSx={homepageCardLayout.spotlight.contentSx}

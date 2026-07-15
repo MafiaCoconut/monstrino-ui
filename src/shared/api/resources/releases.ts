@@ -1,83 +1,67 @@
 import { httpGet } from "@shared/api/http";
 import type { HttpGetOptions, ServerCacheOptions } from "@shared/api/http";
-import { releaseApiDtoSchema } from "@entities/release";
-import type { ReleaseApiDto } from "@entities/release";
+import { releaseApiDtoSchema, releasePageApiDtoSchema } from "@entities/release";
+import type { ReleaseApiDto, ReleasePageApiDto } from "@entities/release";
 import { ValidationError } from "@shared/api/http";
 import { ZodError } from "zod";
-import { getMockRelease, getMockReleasesList, isMockMode } from "../mockClient";
 
-export type ReleaseSearchParams = {
-  q?: string;
-  generations?: string[];
-  series?: string[];
-  characters?: string[];
-  releaseTypes?: string[];
-  rarities?: string[];
-  tags?: string[];
-  sort?: string;
+export type ReleasePageParams = {
   page?: number;
-  perPage?: number;
+  pageSize?: number;
 };
-
-// ─── Cache TTLs ───────────────────────────────────────────────────────────────
 
 const DETAIL_TTL = 60 * 60 * 12; // 12 hours
 const LIST_TTL = 60 * 60; // 1 hour
 
-// ─── Resource functions ───────────────────────────────────────────────────────
-
-function parseReleaseList(raw: unknown): ReleaseApiDto[] {
-  if (!Array.isArray(raw)) {
-    throw new ValidationError("Expected array for releases list", []);
-  }
-
-  return raw.map((item, i) => {
-    try {
-      return releaseApiDtoSchema.parse(item);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new ValidationError(`Invalid release at index ${i}`, err.issues);
-      }
-      throw err;
-    }
-  });
-}
-
-function buildSearchQuery(params?: ReleaseSearchParams): string {
-  if (!params) return "";
-
+function buildPageQuery(params?: ReleasePageParams): string {
   const query = new URLSearchParams();
-  if (params.q) query.set("q", params.q);
-  params.generations?.forEach((v) => query.append("generation", v));
-  params.series?.forEach((v) => query.append("series", v));
-  params.characters?.forEach((v) => query.append("character", v));
-  params.releaseTypes?.forEach((v) => query.append("type", v));
-  params.rarities?.forEach((v) => query.append("rarity", v));
-  params.tags?.forEach((v) => query.append("tag", v));
-  if (params.sort) query.set("sort", params.sort);
-  if (params.page) query.set("page", String(params.page));
-  if (params.perPage) query.set("per_page", String(params.perPage));
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 12;
+  const offset = Math.max(page - 1, 0) * pageSize;
+
+  query.set("limit", String(pageSize));
+  query.set("offset", String(offset));
   return query.toString();
 }
 
-export async function getReleaseById(
-  id: string,
+export async function getReleaseBySlug(
+  slug: string,
   options: HttpGetOptions & { cache?: ServerCacheOptions },
 ): Promise<ReleaseApiDto> {
-  if (isMockMode()) return getMockRelease(id);
-
   const cache: ServerCacheOptions =
     options.context === "server"
-      ? { revalidate: DETAIL_TTL, tags: [`release-${id}`, "release-list"], ...options.cache }
+      ? { revalidate: DETAIL_TTL, tags: [`release-${slug}`, "release-list"], ...options.cache }
       : {};
 
-  const raw = await httpGet<unknown>(`/releases/${id}`, { ...options, cache });
+  const raw = await httpGet<unknown>(`/releases/${slug}`, { ...options, cache });
 
   try {
     return releaseApiDtoSchema.parse(raw);
   } catch (err) {
     if (err instanceof ZodError) {
-      throw new ValidationError(`Invalid release response for id=${id}`, err.issues);
+      throw new ValidationError(`Invalid release response for slug=${slug}`, err.issues);
+    }
+    throw err;
+  }
+}
+
+export async function getReleasesPage(
+  params: ReleasePageParams | undefined,
+  options: HttpGetOptions & { cache?: ServerCacheOptions },
+): Promise<ReleasePageApiDto> {
+  const cache: ServerCacheOptions =
+    options.context === "server"
+      ? { revalidate: LIST_TTL, tags: ["release-list"], ...options.cache }
+      : {};
+
+  const query = buildPageQuery(params);
+  const raw = await httpGet<unknown>(`/releases?${query}`, { ...options, cache });
+
+  try {
+    return releasePageApiDtoSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      throw new ValidationError("Invalid release page response", err.issues);
     }
     throw err;
   }
@@ -86,38 +70,6 @@ export async function getReleaseById(
 export async function getReleasesList(
   options: HttpGetOptions & { cache?: ServerCacheOptions },
 ): Promise<ReleaseApiDto[]> {
-  if (isMockMode()) return getMockReleasesList();
-
-  const cache: ServerCacheOptions =
-    options.context === "server"
-      ? { revalidate: LIST_TTL, tags: ["release-list"], ...options.cache }
-      : {};
-
-  const raw = await httpGet<unknown>(`/releases`, { ...options, cache });
-  return parseReleaseList(raw);
-}
-
-export async function searchReleases(
-  params: ReleaseSearchParams | undefined,
-  options: HttpGetOptions & { cache?: ServerCacheOptions },
-): Promise<ReleaseApiDto[]> {
-  if (isMockMode()) {
-    const list = await getMockReleasesList();
-    if (!params?.q) return list;
-    const q = params.q.toLowerCase();
-    return list.filter((item) => {
-      const haystack = `${item.name ?? ""} ${item.display_name ?? ""} ${item.character_name ?? ""} ${item.series_name ?? ""}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }
-
-  const cache: ServerCacheOptions =
-    options.context === "server"
-      ? { revalidate: LIST_TTL, tags: ["release-list"], ...options.cache }
-      : {};
-
-  const query = buildSearchQuery(params);
-  const path = query ? `/releases?${query}` : "/releases";
-  const raw = await httpGet<unknown>(path, { ...options, cache });
-  return parseReleaseList(raw);
+  const page = await getReleasesPage({ page: 1, pageSize: 100 }, options);
+  return page.items;
 }

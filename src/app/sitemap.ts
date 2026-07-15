@@ -47,9 +47,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]);
 
     const releaseRoutes: MetadataRoute.Sitemap = releases
-      .filter((item) => item.id)
+      .filter((item) => item.slug)
       .map((item) => ({
-        url: `${base}/catalog/r/${item.id}`,
+        url: `${base}/catalog/r/${item.slug}`,
         lastModified: getUpdated(item.updated_at),
         changeFrequency: 'monthly',
         priority: 0.8,

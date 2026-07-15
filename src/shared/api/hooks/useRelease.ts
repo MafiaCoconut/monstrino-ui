@@ -2,40 +2,51 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys";
-import { getReleaseById, getReleasesList, searchReleases } from "../resources";
+import { getReleaseBySlug, getReleasesList, getReleasesPage } from "../resources";
 import { releaseFromApiDto } from "@entities/release";
 import type { ReleaseModel } from "@entities/release";
-import type { ReleaseSearchParams } from "../resources";
 
-// ─── Detail hook ──────────────────────────────────────────────────────────────
+export type UseReleasesPageParams = {
+  page: number;
+  pageSize: number;
+};
 
 type UseReleaseOptions = {
   initialData?: ReleaseModel;
 };
 
-export function useRelease(id: string | undefined, options?: UseReleaseOptions) {
+export function useRelease(slug: string | undefined, options?: UseReleaseOptions) {
   return useQuery<ReleaseModel>({
-    queryKey: queryKeys.release.detail(id ?? ""),
+    queryKey: queryKeys.release.detail(slug ?? ""),
     queryFn: async () => {
-      const dto = await getReleaseById(id!, { context: "client" });
+      const dto = await getReleaseBySlug(slug!, { context: "client" });
       return releaseFromApiDto(dto);
     },
-    enabled: !!id,
+    enabled: !!slug,
     initialData: options?.initialData,
     staleTime: 1000 * 60 * 10, // 10 minutes — releases don't change often
   });
 }
 
-// ─── List hook ────────────────────────────────────────────────────────────────
-
-export function useReleasesList(filters?: ReleaseSearchParams) {
-  const signature = JSON.stringify(filters ?? {});
-  return useQuery<ReleaseModel[]>({
-    queryKey: queryKeys.release.list(signature),
+export function useReleasesPage(params: UseReleasesPageParams) {
+  return useQuery({
+    queryKey: queryKeys.release.list(JSON.stringify(params)),
     queryFn: async () => {
-      const dtos = filters
-        ? await searchReleases(filters, { context: "client" })
-        : await getReleasesList({ context: "client" });
+      const page = await getReleasesPage(params, { context: "client" });
+      return {
+        ...page,
+        items: page.items.map((dto) => releaseFromApiDto(dto)),
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useReleasesList() {
+  return useQuery<ReleaseModel[]>({
+    queryKey: queryKeys.release.list("default"),
+    queryFn: async () => {
+      const dtos = await getReleasesList({ context: "client" });
       return dtos.map((dto) => releaseFromApiDto(dto));
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
