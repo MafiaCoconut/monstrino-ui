@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys";
 import { getReleaseBySlug, getReleasesList, getReleasesPage } from "../resources";
+import { RELEASE_MAX_STALE_MS } from "../cachePolicy";
 import { releaseFromApiDto } from "@entities/release";
 import type { ReleaseModel } from "@entities/release";
 
@@ -24,7 +25,7 @@ export function useRelease(slug: string | undefined, options?: UseReleaseOptions
     },
     enabled: !!slug,
     initialData: options?.initialData,
-    staleTime: 1000 * 60 * 10, // 10 minutes — releases don't change often
+    staleTime: RELEASE_MAX_STALE_MS,
   });
 }
 
@@ -38,7 +39,7 @@ export function useReleasesPage(params: UseReleasesPageParams) {
         items: page.items.map((dto) => releaseFromApiDto(dto)),
       };
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: RELEASE_MAX_STALE_MS,
   });
 }
 
@@ -49,6 +50,6 @@ export function useReleasesList() {
       const dtos = await getReleasesList({ context: "client" });
       return dtos.map((dto) => releaseFromApiDto(dto));
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: RELEASE_MAX_STALE_MS,
   });
 }

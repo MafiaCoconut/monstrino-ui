@@ -9,7 +9,10 @@ import { buildReleaseSchema } from '@/shared/seo/structuredData';
 import { buildReleaseDetailMetadata } from '@/shared/seo/detailMetadata';
 import { ReleaseDetailView } from '@/widgets/detail';
 
-export const revalidate = 43200;
+// Must not exceed RELEASE_MAX_STALE_SECONDS (@shared/api/cachePolicy):
+// HIDDEN is an operational kill switch and may lag at most 5 minutes.
+// Next.js requires a statically analyzable literal here.
+export const revalidate = 300;
 
 type PageProps = {
   params: { slug: string } | Promise<{ slug: string }>;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "@/__tests__/msw/server";
 import { getReleaseBySlug, getReleasesList, getReleasesPage } from "./releases";
-import { ApiError, ValidationError } from "../http";
+import { ApiError, MalformedApiResponseError, ValidationError } from "../http";
 import { MOCK_RELEASES } from "@/__mocks__/entities";
 
 const OPT = { context: "client" } as const;
@@ -28,12 +28,12 @@ describe("getReleaseBySlug", () => {
     expect((err as ApiError).status).toBe(500);
   });
 
-  it("throws ValidationError when response body is not valid JSON", async () => {
+  it("throws MalformedApiResponseError when response body is not valid JSON", async () => {
     server.use(
       http.get(`${BASE}/releases/:slug`, () => new HttpResponse("not-json", { status: 200 })),
     );
     await expect(getReleaseBySlug("frankie-stein-basic-000000000001", OPT)).rejects.toThrow(
-      ValidationError,
+      MalformedApiResponseError,
     );
   });
 });
@@ -79,7 +79,11 @@ describe("getReleasesPage", () => {
   it("throws ValidationError when response is not a release page", async () => {
     server.use(
       http.get(`${BASE}/releases`, () =>
-        HttpResponse.json({ status: "success", data: { wrong: "shape" } }),
+        HttpResponse.json({
+          status: "success",
+          data: { wrong: "shape" },
+          request_id: "req-test",
+        }),
       ),
     );
     await expect(getReleasesPage({ page: 1, pageSize: 12 }, OPT)).rejects.toThrow(

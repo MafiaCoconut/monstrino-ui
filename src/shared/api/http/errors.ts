@@ -5,13 +5,23 @@ export class ApiError extends Error {
   readonly code: string;
   readonly status: number;
   readonly requestId?: string;
+  readonly retryable: boolean;
+  readonly details?: Record<string, unknown> | null;
 
-  constructor(message: string, code: string, status: number, requestId?: string) {
+  constructor(
+    message: string,
+    code: string,
+    status: number,
+    requestId?: string,
+    options?: { retryable?: boolean; details?: Record<string, unknown> | null },
+  ) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
     this.requestId = requestId;
+    this.retryable = options?.retryable ?? false;
+    this.details = options?.details;
   }
 }
 
@@ -39,6 +49,24 @@ export class ValidationError extends Error {
   }
 }
 
+// ─── Malformed API Response Error ─────────────────────────────────────────────
+
+/**
+ * Thrown when an HTTP 2xx body is not a valid Monstrino API envelope
+ * (not JSON, missing/unknown `status`, missing `data`, legacy shapes, …).
+ * Distinct from ValidationError: the envelope itself is broken, not the
+ * resource payload inside it.
+ */
+export class MalformedApiResponseError extends Error {
+  readonly body?: unknown;
+
+  constructor(message: string, body?: unknown) {
+    super(message);
+    this.name = "MalformedApiResponseError";
+    this.body = body;
+  }
+}
+
 // ─── Type guards ──────────────────────────────────────────────────────────────
 
 export function isApiError(err: unknown): err is ApiError {
@@ -51,4 +79,8 @@ export function isNetworkError(err: unknown): err is NetworkError {
 
 export function isValidationError(err: unknown): err is ValidationError {
   return err instanceof ValidationError;
+}
+
+export function isMalformedApiResponseError(err: unknown): err is MalformedApiResponseError {
+  return err instanceof MalformedApiResponseError;
 }

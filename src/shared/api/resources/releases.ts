@@ -4,14 +4,16 @@ import { releaseApiDtoSchema, releasePageApiDtoSchema } from "@entities/release"
 import type { ReleaseApiDto, ReleasePageApiDto } from "@entities/release";
 import { ValidationError } from "@shared/api/http";
 import { ZodError } from "zod";
+import {
+  RELEASE_MAX_STALE_SECONDS,
+  RELEASE_LIST_TAG,
+  releaseDetailTag,
+} from "@shared/api/cachePolicy";
 
 export type ReleasePageParams = {
   page?: number;
   pageSize?: number;
 };
-
-const DETAIL_TTL = 60 * 60 * 12; // 12 hours
-const LIST_TTL = 60 * 60; // 1 hour
 
 function buildPageQuery(params?: ReleasePageParams): string {
   const query = new URLSearchParams();
@@ -30,7 +32,11 @@ export async function getReleaseBySlug(
 ): Promise<ReleaseApiDto> {
   const cache: ServerCacheOptions =
     options.context === "server"
-      ? { revalidate: DETAIL_TTL, tags: [`release-${slug}`, "release-list"], ...options.cache }
+      ? {
+          revalidate: RELEASE_MAX_STALE_SECONDS,
+          tags: [releaseDetailTag(slug), RELEASE_LIST_TAG],
+          ...options.cache,
+        }
       : {};
 
   const raw = await httpGet<unknown>(`/releases/${slug}`, { ...options, cache });
@@ -51,7 +57,7 @@ export async function getReleasesPage(
 ): Promise<ReleasePageApiDto> {
   const cache: ServerCacheOptions =
     options.context === "server"
-      ? { revalidate: LIST_TTL, tags: ["release-list"], ...options.cache }
+      ? { revalidate: RELEASE_MAX_STALE_SECONDS, tags: [RELEASE_LIST_TAG], ...options.cache }
       : {};
 
   const query = buildPageQuery(params);

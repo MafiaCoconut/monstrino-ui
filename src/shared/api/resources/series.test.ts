@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "@/__tests__/msw/server";
 import { getSeriesById, getSeriesList } from "./series";
-import { ApiError, ValidationError } from "../http";
+import { ApiError, MalformedApiResponseError, ValidationError } from "../http";
 import { MOCK_SERIES } from "@/__mocks__/entities";
 
 const OPT = { context: "client" } as const;
@@ -19,11 +19,11 @@ describe("getSeriesById", () => {
     await expect(getSeriesById("9999", OPT)).rejects.toThrow(ApiError);
   });
 
-  it("throws ValidationError for unparseable body", async () => {
+  it("throws MalformedApiResponseError for unparseable body", async () => {
     server.use(
       http.get(`${BASE}/series/:id`, () => new HttpResponse("bad", { status: 200 })),
     );
-    await expect(getSeriesById("1", OPT)).rejects.toThrow(ValidationError);
+    await expect(getSeriesById("1", OPT)).rejects.toThrow(MalformedApiResponseError);
   });
 });
 
@@ -37,7 +37,7 @@ describe("getSeriesList", () => {
   it("throws ValidationError when response is not an array", async () => {
     server.use(
       http.get(`${BASE}/series`, () =>
-        HttpResponse.json({ success: true, data: { bad: "shape" } }),
+        HttpResponse.json({ status: "success", data: { bad: "shape" }, request_id: "req-test" }),
       ),
     );
     await expect(getSeriesList(OPT)).rejects.toThrow(ValidationError);

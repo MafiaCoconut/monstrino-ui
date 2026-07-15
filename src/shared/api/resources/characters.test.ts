@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "@/__tests__/msw/server";
 import { getCharacterById, getCharactersList } from "./characters";
-import { ApiError, ValidationError } from "../http";
+import { ApiError, MalformedApiResponseError, ValidationError } from "../http";
 import { MOCK_CHARACTERS } from "@/__mocks__/entities";
 
 const OPT = { context: "client" } as const;
@@ -19,11 +19,11 @@ describe("getCharacterById", () => {
     await expect(getCharacterById("9999", OPT)).rejects.toThrow(ApiError);
   });
 
-  it("throws ValidationError for unparseable body", async () => {
+  it("throws MalformedApiResponseError for unparseable body", async () => {
     server.use(
       http.get(`${BASE}/characters/:id`, () => new HttpResponse("bad", { status: 200 })),
     );
-    await expect(getCharacterById("101", OPT)).rejects.toThrow(ValidationError);
+    await expect(getCharacterById("101", OPT)).rejects.toThrow(MalformedApiResponseError);
   });
 });
 
@@ -37,7 +37,7 @@ describe("getCharactersList", () => {
   it("throws ValidationError when response is not an array", async () => {
     server.use(
       http.get(`${BASE}/characters`, () =>
-        HttpResponse.json({ success: true, data: "not-an-array" }),
+        HttpResponse.json({ status: "success", data: "not-an-array", request_id: "req-test" }),
       ),
     );
     await expect(getCharactersList(OPT)).rejects.toThrow(ValidationError);

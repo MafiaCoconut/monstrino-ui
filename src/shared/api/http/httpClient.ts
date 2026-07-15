@@ -1,15 +1,21 @@
-import { ZodError } from "zod";
-import { ApiError, NetworkError, ValidationError } from "./errors";
+import { ApiError, MalformedApiResponseError, NetworkError } from "./errors";
 import { backendUrl } from "@shared/config/env";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Monstrino unified API envelope */
-interface MonstrinoEnvelope<T> {
-  success: boolean;
-  data?: T;
-  error?: { code: string; message: string } | null;
-  meta?: { request_id?: string; version?: string };
+/**
+ * Canonical Monstrino API envelope (see monstrino_api.v1.contracts.responses).
+ * Top-level: status, request_id, correlation_id, trace_id, data, error, meta.
+ * Supported statuses: "success" | "accepted" | "error".
+ */
+const ENVELOPE_STATUSES = ["success", "accepted", "error"] as const;
+type EnvelopeStatus = (typeof ENVELOPE_STATUSES)[number];
+
+interface EnvelopeErrorBody {
+  code: string;
+  message: string;
+  retryable?: boolean;
+  details?: Record<string, unknown> | null;
 }
 
 /** ISR options — only available in server context */
@@ -39,48 +45,90 @@ export function buildApiUrl(path: string): string {
   return `${base}/api/v1${path}`;
 }
 
-// ─── Response unwrapper ───────────────────────────────────────────────────────
+// ─── Strict envelope parser ───────────────────────────────────────────────────
+
+function isEnvelopeStatus(value: unknown): value is EnvelopeStatus {
+  return typeof value === "string" && (ENVELOPE_STATUSES as readonly string[]).includes(value);
+}
+
+function readErrorBody(value: unknown): EnvelopeErrorBody | null {
+  if (value == null || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.code !== "string" || typeof obj.message !== "string") return null;
+  return {
+    code: obj.code,
+    message: obj.message,
+    retryable: typeof obj.retryable === "boolean" ? obj.retryable : undefined,
+    details:
+      obj.details == null || typeof obj.details !== "object"
+        ? null
+        : (obj.details as Record<string, unknown>),
+  };
+}
+
+function readRequestId(obj: Record<string, unknown>): string | undefined {
+  // request_id lives at the top level of the canonical envelope — never in meta.
+  return typeof obj.request_id === "string" ? obj.request_id : undefined;
+}
+
+function buildApiErrorFromEnvelope(
+  obj: Record<string, unknown>,
+  error: EnvelopeErrorBody,
+  httpStatus: number,
+): ApiError {
+  return new ApiError(error.message, error.code, httpStatus, readRequestId(obj), {
+    retryable: error.retryable,
+    details: error.details,
+  });
+}
 
 /**
- * Handles all three response shapes the backend may emit:
- *   - Monstrino envelope: { success, data, meta }
- *   - Legacy result wrapper: { result: T }
- *   - Direct data: T
+ * Parses the canonical Monstrino envelope of an HTTP 2xx response.
+ * - status "success" | "accepted" with `data` present → returns `data`
+ * - status "error" → throws ApiError (even on HTTP 200)
+ * - anything else (legacy `success`/`result` shapes, unknown/missing status,
+ *   missing data) → throws MalformedApiResponseError
  */
-function unwrapResponse<T>(json: unknown): T {
-  if (json == null || typeof json !== "object") return json as T;
+function parseEnvelope<T>(json: unknown, httpStatus: number): T {
+  if (json == null || typeof json !== "object" || Array.isArray(json)) {
+    throw new MalformedApiResponseError("API response is not an envelope object", json);
+  }
 
   const obj = json as Record<string, unknown>;
 
-  // Monstrino envelope
-  if ("success" in obj) {
-    const env = obj as unknown as MonstrinoEnvelope<T>;
-    if (!env.success && env.error) {
-      throw new ApiError(
-        env.error.message ?? "API error",
-        env.error.code ?? "UNKNOWN",
-        422,
-        env.meta?.request_id,
-      );
-    }
-    if (env.data !== undefined) return env.data as T;
+  if (!("status" in obj)) {
+    throw new MalformedApiResponseError("API envelope is missing 'status'", json);
+  }
+  if (!isEnvelopeStatus(obj.status)) {
+    throw new MalformedApiResponseError(
+      `API envelope has unknown status: ${String(obj.status)}`,
+      json,
+    );
   }
 
-  // Legacy result wrapper
-  if ("result" in obj && obj.result !== undefined) return obj.result as T;
+  if (obj.status === "error") {
+    const error = readErrorBody(obj.error);
+    if (!error) {
+      throw new MalformedApiResponseError("API error envelope is missing 'error' body", json);
+    }
+    throw buildApiErrorFromEnvelope(obj, error, httpStatus);
+  }
 
-  // Legacy data wrapper (without 'success' key)
-  if ("data" in obj && !("success" in obj) && obj.data !== undefined)
-    return obj.data as T;
+  if (!("data" in obj) || obj.data === undefined) {
+    throw new MalformedApiResponseError(
+      `API ${obj.status} envelope is missing 'data'`,
+      json,
+    );
+  }
 
-  return json as T;
+  return obj.data as T;
 }
 
 // ─── Core HTTP GET ────────────────────────────────────────────────────────────
 
 /**
  * Performs a typed HTTP GET to the Monstrino API.
- * Throws ApiError, NetworkError, or ValidationError — never returns null.
+ * Throws ApiError, NetworkError, or MalformedApiResponseError — never returns null.
  */
 export async function httpGet<T>(path: string, options: HttpGetOptions): Promise<T> {
   const url = buildApiUrl(path);
@@ -106,33 +154,34 @@ export async function httpGet<T>(path: string, options: HttpGetOptions): Promise
   }
 
   if (!response.ok) {
-    let code = "HTTP_ERROR";
-    let message = `Request failed with status ${response.status}`;
-    let requestId: string | undefined;
+    let body: unknown;
     try {
-      const errBody = (await response.json()) as Partial<MonstrinoEnvelope<never>>;
-      if (errBody.error?.code) code = errBody.error.code;
-      if (errBody.error?.message) message = errBody.error.message;
-      if (errBody.meta?.request_id) requestId = errBody.meta.request_id;
+      body = await response.json();
     } catch {
-      // ignore JSON parse failure on error body
+      body = undefined;
     }
-    throw new ApiError(message, code, response.status, requestId);
+
+    if (body != null && typeof body === "object") {
+      const obj = body as Record<string, unknown>;
+      const error = obj.status === "error" ? readErrorBody(obj.error) : null;
+      if (error) {
+        throw buildApiErrorFromEnvelope(obj, error, response.status);
+      }
+    }
+
+    throw new ApiError(
+      `Request failed with status ${response.status}`,
+      "HTTP_ERROR",
+      response.status,
+    );
   }
 
   let json: unknown;
   try {
     json = await response.json();
-  } catch (err) {
-    throw new ValidationError("Failed to parse response JSON", [err]);
+  } catch {
+    throw new MalformedApiResponseError("API response is not valid JSON");
   }
 
-  try {
-    return unwrapResponse<T>(json);
-  } catch (err) {
-    if (err instanceof ZodError) {
-      throw new ValidationError("Response did not match expected schema", err.issues);
-    }
-    throw err;
-  }
+  return parseEnvelope<T>(json, response.status);
 }
