@@ -1,4 +1,4 @@
-import { ApiError, MalformedApiResponseError, NetworkError } from "./errors";
+import { ApiError, MalformedApiResponseError, NetworkError, TimeoutError } from "./errors";
 import { backendUrl } from "@shared/config/env";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -31,7 +31,21 @@ export type FetchContext = "server" | "client";
 export interface HttpGetOptions {
   context: FetchContext;
   cache?: ServerCacheOptions;
+  /**
+   * Bounded timeout for this read (default DEFAULT_TIMEOUT_MS). All httpGet
+   * calls are idempotent reads, so aborting is always safe. No automatic
+   * retries are performed here — React Query owns client-side retry policy.
+   */
+  timeoutMs?: number;
+  /** Caller-provided cancellation signal, combined with the timeout. */
+  signal?: AbortSignal;
 }
+
+/**
+ * Default read timeout. Bounds server-side rendering waits on a hung backend
+ * well below platform/proxy timeouts while leaving headroom for cold starts.
+ */
+export const DEFAULT_TIMEOUT_MS = 10_000;
 
 // ─── URL builder ─────────────────────────────────────────────────────────────
 
@@ -126,16 +140,27 @@ function parseEnvelope<T>(json: unknown, httpStatus: number): T {
  */
 export async function httpGet<T>(path: string, options: HttpGetOptions): Promise<T> {
   const url = buildApiUrl(path);
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  // Every request carries a bounded timeout; a caller-provided signal is
+  // combined so explicit cancellation still works (AbortSignal.any is
+  // available in Node ≥20 and all evergreen browsers).
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeoutSignal])
+    : timeoutSignal;
 
   const fetchInit: RequestInit & { next?: { revalidate?: number | false; tags?: string[] } } =
     options.context === "server"
       ? {
+          signal,
           next: {
             revalidate: options.cache?.revalidate,
             tags: options.cache?.tags,
           },
         }
       : {
+          signal,
           credentials: "include",
           cache: "no-store",
         };
@@ -144,6 +169,14 @@ export async function httpGet<T>(path: string, options: HttpGetOptions): Promise
   try {
     response = await fetch(url, fetchInit);
   } catch (err) {
+    if (timeoutSignal.aborted) {
+      throw new TimeoutError(`Request timed out after ${timeoutMs}ms: ${url}`, timeoutMs);
+    }
+    if (options.signal?.aborted) {
+      // Caller cancellation: propagate untouched so query libraries treat it
+      // as a cancellation, not a backend failure.
+      throw err;
+    }
     throw new NetworkError(`Network request failed: ${url}`, err);
   }
 

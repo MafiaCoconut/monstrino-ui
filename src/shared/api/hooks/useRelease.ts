@@ -12,6 +12,14 @@ export type UseReleasesPageParams = {
   pageSize: number;
 };
 
+/** Model-shaped release page, as returned by useReleasesPage. */
+export type ReleasesPageModel = {
+  items: ReleaseModel[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
 type UseReleaseOptions = {
   initialData?: ReleaseModel;
 };
@@ -29,8 +37,16 @@ export function useRelease(slug: string | undefined, options?: UseReleaseOptions
   });
 }
 
-export function useReleasesPage(params: UseReleasesPageParams) {
-  return useQuery({
+type UseReleasesPageOptions = {
+  /** Server-rendered first page, used to hydrate without a client refetch. */
+  initialData?: ReleasesPageModel;
+};
+
+export function useReleasesPage(
+  params: UseReleasesPageParams,
+  options?: UseReleasesPageOptions,
+) {
+  return useQuery<ReleasesPageModel>({
     queryKey: queryKeys.release.list(JSON.stringify(params)),
     queryFn: async () => {
       const page = await getReleasesPage(params, { context: "client" });
@@ -39,6 +55,7 @@ export function useReleasesPage(params: UseReleasesPageParams) {
         items: page.items.map((dto) => releaseFromApiDto(dto)),
       };
     },
+    initialData: options?.initialData,
     staleTime: RELEASE_MAX_STALE_MS,
   });
 }

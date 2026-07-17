@@ -5,7 +5,8 @@ import { getSiteUrl } from '@/shared/seo/siteUrl';
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: 'Monstrino',
+  // Absolute: prevents the root template from producing "Monstrino | Monstrino".
+  title: { absolute: 'Monstrino — Monster High Collection & Release Hub' },
   description: 'Monster High Collection & Release Hub — explore releases, characters, series and pets.',
   keywords: ['Monster High', 'Monster High collector', 'Monster High catalog', 'doll catalog'],
   alternates: {

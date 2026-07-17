@@ -4,3 +4,10 @@ export { buildCharacterSchema } from "./characterSchema";
 export { buildPetSchema } from "./petSchema";
 export { buildBreadcrumbSchema } from "./breadcrumbSchema";
 export type { BreadcrumbItem } from "./breadcrumbSchema";
+export {
+  JsonLd,
+  BreadcrumbJsonLd,
+  ProductStructuredData,
+  CharacterStructuredData,
+  SeriesStructuredData,
+} from "./components";

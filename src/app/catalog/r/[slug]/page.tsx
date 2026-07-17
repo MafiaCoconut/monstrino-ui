@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getReleaseBySlug } from '@/shared/api/resources';
-import { isApiError } from '@/shared/api/http';
+import { classifyEntityError, isMissingEntity } from '@/shared/api/entityStatus';
+import { isValidSlugParam } from '@/shared/routes/params';
 import { releaseFromApiDto } from '@entities/release';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
-import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/structuredData';
 import { buildReleaseSchema } from '@/shared/seo/structuredData';
 import { buildReleaseDetailMetadata } from '@/shared/seo/detailMetadata';
 import { ReleaseDetailView } from '@/widgets/detail';
@@ -19,10 +20,15 @@ type PageProps = {
 };
 
 async function getReleaseOrNotFound(slug: string) {
+  if (!isValidSlugParam(slug)) {
+    notFound();
+  }
   try {
     return await getReleaseBySlug(slug, { context: 'server' });
   } catch (err) {
-    if (isApiError(err) && err.status === 404) {
+    // "gone" is prepared, not active: real 410 emission arrives with the
+    // backend tombstone resolver (WP2.3) — see @shared/api/entityStatus.
+    if (isMissingEntity(classifyEntityError(err))) {
       notFound();
     }
     throw err;

@@ -3,12 +3,7 @@ import type { ReleaseModel } from '@entities/release';
 import type { SeriesModel } from '@entities/series';
 import type { CharacterModel } from '@entities/character';
 import type { PetModel } from '@entities/pet';
-
-function toLastModified(value?: string): Date | undefined {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
+import { metaTitle, metaDescription, sanitizeMetaText } from './sanitizeMeta';
 
 function baseDetailMeta({
   title,
@@ -27,7 +22,8 @@ function baseDetailMeta({
   keywords: string[];
   openGraphType: 'article' | 'profile';
 }): Metadata {
-  const lastModified = toLastModified(updatedAt);
+  title = metaTitle(title);
+  description = metaDescription(description);
 
   return {
     title,
@@ -53,8 +49,20 @@ function baseDetailMeta({
       description,
       images: imageUrl ? [imageUrl] : [],
     },
-    ...(lastModified ? { lastModified } : {}),
   };
+}
+
+/**
+ * Fact-based fallback for BASIC (not yet enriched) releases: composed only
+ * from data the API actually returned. Never invents facts and never emits
+ * one identical string for every release.
+ */
+function releaseFallbackDescription(model: ReleaseModel, title: string): string {
+  const facts: string[] = [];
+  if (model.year) facts.push(`${model.year}`);
+  if (model.code) facts.push(`product code ${model.code}`);
+  const factSuffix = facts.length > 0 ? ` (${facts.join(', ')})` : '';
+  return `${title}${factSuffix} — Monster High release in the Monstrino collector catalog.`;
 }
 
 export function buildReleaseDetailMetadata(
@@ -62,9 +70,9 @@ export function buildReleaseDetailMetadata(
   canonical: string,
   id: string,
 ): Metadata {
-  const title = model.title || `Release ${id}`;
+  const title = sanitizeMetaText(model.title) || `Release ${id}`;
   const description =
-    model.description || `Details and release information for ${title}.`;
+    sanitizeMetaText(model.description) || releaseFallbackDescription(model, title);
   const keywords = [
     model.code,
     model.mpn,

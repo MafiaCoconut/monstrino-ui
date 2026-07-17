@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse, type JsonBodyType } from "msw";
 import { server } from "@/__tests__/msw/server";
 import { successEnvelope, errorEnvelope } from "@/__tests__/msw/handlers";
 import { httpGet } from "./httpClient";
-import { ApiError, MalformedApiResponseError, NetworkError } from "./errors";
+import { ApiError, MalformedApiResponseError, NetworkError, TimeoutError } from "./errors";
 import { getReleaseBySlug, getReleasesPage } from "../resources/releases";
 import { MOCK_RELEASES } from "@/__mocks__/entities";
 
@@ -11,7 +11,7 @@ const OPT = { context: "client" } as const;
 const BASE = "http://localhost:8000/api/v1";
 const PATH = "/releases";
 
-function respondWith(body: unknown, status = 200) {
+function respondWith(body: JsonBodyType, status = 200) {
   server.use(http.get(`${BASE}${PATH}`, () => HttpResponse.json(body, { status })));
 }
 
@@ -143,5 +143,43 @@ describe("release resources on top of the strict parser", () => {
   it("release detail resource validates data after unwrap", async () => {
     const dto = await getReleaseBySlug(MOCK_RELEASES[0].slug, OPT);
     expect(dto.id).toBe(MOCK_RELEASES[0].id);
+  });
+});
+
+describe("bounded timeout and cancellation", () => {
+  it("throws TimeoutError when the backend hangs past the bound", async () => {
+    server.use(
+      http.get(`${BASE}${PATH}`, async () => {
+        await delay("infinite");
+        return HttpResponse.json({});
+      }),
+    );
+
+    const err = await httpGet(PATH, { ...OPT, timeoutMs: 50 }).catch((e) => e);
+    expect(err).toBeInstanceOf(TimeoutError);
+    expect((err as TimeoutError).timeoutMs).toBe(50);
+  });
+
+  it("propagates caller cancellation untouched (not a backend failure)", async () => {
+    server.use(
+      http.get(`${BASE}${PATH}`, async () => {
+        await delay("infinite");
+        return HttpResponse.json({});
+      }),
+    );
+
+    const controller = new AbortController();
+    const pending = httpGet(PATH, { ...OPT, signal: controller.signal, timeoutMs: 5_000 });
+    controller.abort();
+
+    const err = await pending.catch((e) => e);
+    expect(err).not.toBeInstanceOf(TimeoutError);
+    expect(err).not.toBeInstanceOf(NetworkError);
+    expect((err as Error).name).toBe("AbortError");
+  });
+
+  it("fast responses are unaffected by the default timeout", async () => {
+    respondWith(successEnvelope({ ok: true }));
+    await expect(httpGet(PATH, OPT)).resolves.toEqual({ ok: true });
   });
 });

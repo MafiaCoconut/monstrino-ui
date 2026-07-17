@@ -1,6 +1,7 @@
-import type { DetailSeoLink } from './DetailSeoContent';
-import type { BreadcrumbItem } from './structuredData';
-import { buildBreadcrumbSchema } from './structuredData';
+import type { DetailSeoLink } from '../DetailSeoContent';
+import type { BreadcrumbItem } from './breadcrumbSchema';
+import { buildBreadcrumbSchema } from './breadcrumbSchema';
+import { serializeJsonLd } from '../jsonld';
 
 // ─── Generic JSON-LD renderer ─────────────────────────────────────────────────
 
@@ -8,7 +9,7 @@ export function JsonLd({ schema }: { schema: Record<string, unknown> }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }
@@ -62,7 +63,7 @@ export function ProductStructuredData(props: ProductStructuredDataProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
     />
   );
 }
@@ -73,7 +74,7 @@ export function CharacterStructuredData(props: PersonStructuredDataProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
     />
   );
 }
@@ -84,7 +85,7 @@ export function SeriesStructuredData(props: CreativeWorkStructuredDataProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
     />
   );
 }

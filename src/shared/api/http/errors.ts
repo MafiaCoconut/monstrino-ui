@@ -36,6 +36,23 @@ export class NetworkError extends Error {
   }
 }
 
+// ─── Timeout Error ────────────────────────────────────────────────────────────
+
+/**
+ * Thrown when a request exceeds its bounded timeout (AbortSignal.timeout).
+ * Distinct from NetworkError so callers can tell "backend slow/hung" from
+ * "connection failed"; both classify as backend-unavailable for pages.
+ */
+export class TimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(message: string, timeoutMs: number) {
+    super(message);
+    this.name = "TimeoutError";
+    this.timeoutMs = timeoutMs;
+  }
+}
+
 // ─── Validation Error ─────────────────────────────────────────────────────────
 
 /** Thrown when a backend response fails Zod schema validation */
@@ -72,6 +89,10 @@ export function isApiError(err: unknown): err is ApiError {
 
 export function isNetworkError(err: unknown): err is NetworkError {
   return err instanceof NetworkError;
+}
+
+export function isTimeoutError(err: unknown): err is TimeoutError {
+  return err instanceof TimeoutError;
 }
 
 export function isValidationError(err: unknown): err is ValidationError {

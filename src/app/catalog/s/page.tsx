@@ -5,14 +5,17 @@ import SeriesCatalog from '@/widgets/catalog/SeriesCatalog';
 import SeriesCatalogLegacy from '@/widgets/catalog/SeriesCatalogLegacy';
 import { buildCatalogMetadata } from '@/shared/seo/catalogMetadata';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
-import { BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { BreadcrumbJsonLd } from '@/shared/seo/structuredData';
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  return buildCatalogMetadata('Series Catalog', '/catalog/s', searchParams);
+  return buildCatalogMetadata('Series Catalog', '/catalog/s', searchParams, {
+    // CSR-only list: noindex until WP10.2 server list DTOs (route registry).
+    indexable: false,
+  });
 }
 
 export default function Page() {

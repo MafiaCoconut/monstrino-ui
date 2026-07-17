@@ -2,11 +2,12 @@ import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCharacterById } from '@/shared/api/resources';
-import { isApiError } from '@/shared/api/http';
+import { classifyEntityError, isMissingEntity } from '@/shared/api/entityStatus';
+import { isValidIdParam } from '@/shared/routes/params';
 import { characterFromApiDto } from '@entities/character';
 import type { CharacterApiDto } from '@entities/character';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
-import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/structuredData';
 import { buildCharacterSchema } from '@/shared/seo/structuredData';
 import { buildCharacterDetailMetadata } from '@/shared/seo/detailMetadata';
 import { CharacterDetailView } from '@/widgets/detail';
@@ -19,10 +20,13 @@ type PageProps = {
 };
 
 async function getCharacterOrNotFound(id: string): Promise<CharacterApiDto> {
+  if (!isValidIdParam(id)) {
+    notFound();
+  }
   try {
     return await getCharacterById(id, { context: 'server' });
   } catch (err) {
-    if (isApiError(err) && err.status === 404) {
+    if (isMissingEntity(classifyEntityError(err))) {
       notFound();
     }
     throw err;

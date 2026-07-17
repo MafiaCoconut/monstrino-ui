@@ -2,11 +2,12 @@ import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPetById } from '@/shared/api/resources';
-import { isApiError } from '@/shared/api/http';
+import { classifyEntityError, isMissingEntity } from '@/shared/api/entityStatus';
+import { isValidIdParam } from '@/shared/routes/params';
 import { petFromApiDto } from '@entities/pet';
 import type { PetApiDto } from '@entities/pet';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
-import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/structuredData';
 import { buildPetSchema } from '@/shared/seo/structuredData';
 import { buildPetDetailMetadata } from '@/shared/seo/detailMetadata';
 import { PetDetailView } from '@/widgets/detail';
@@ -19,10 +20,13 @@ type PageProps = {
 };
 
 async function getPetOrNotFound(id: string): Promise<PetApiDto> {
+  if (!isValidIdParam(id)) {
+    notFound();
+  }
   try {
     return await getPetById(id, { context: 'server' });
   } catch (err) {
-    if (isApiError(err) && err.status === 404) {
+    if (isMissingEntity(classifyEntityError(err))) {
       notFound();
     }
     throw err;

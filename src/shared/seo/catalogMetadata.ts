@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getSiteUrl } from './siteUrl';
+import { isIndexableWithParams, canonicalPathForParams } from './queryPolicy';
 
 type SearchParams = Record<string, string | string[] | undefined> | undefined;
 
@@ -29,14 +30,28 @@ const CATALOG_META: Record<
   },
 };
 
+type CatalogMetadataOptions = {
+  /**
+   * Route-level indexability gate (route registry is the source of truth).
+   * `false` forces noindex, follow regardless of query parameters — used for
+   * CSR-only list routes whose meaningful content is not server-rendered yet
+   * (activation condition: WP10.2 list DTOs + server-rendered first page).
+   */
+  indexable?: boolean;
+};
+
 export async function buildCatalogMetadata(
   title: string,
   path: string,
   searchParams?: Promise<SearchParams> | SearchParams,
+  options?: CatalogMetadataOptions,
 ): Promise<Metadata> {
   const resolved = searchParams instanceof Promise ? await searchParams : searchParams;
-  const hasQuery = Boolean(resolved && Object.keys(resolved).length > 0);
-  const canonical = `${getSiteUrl()}${path}`;
+  // Central query policy: filter/sort/pagination params → noindex, follow;
+  // tracking/ui-only params alone stay indexable. Canonical is always the
+  // clean base path and never carries query parameters.
+  const indexable = (options?.indexable ?? true) && isIndexableWithParams(resolved);
+  const canonical = `${getSiteUrl()}${canonicalPathForParams(path)}`;
   const meta = CATALOG_META[path] ?? { description: `${title} on Monstrino.`, keywords: [] };
 
   return {
@@ -58,8 +73,8 @@ export async function buildCatalogMetadata(
       title: `${title} | Monstrino`,
       description: meta.description,
     },
-    robots: hasQuery
-      ? { index: false, follow: true }
-      : { index: true, follow: true },
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
   };
 }

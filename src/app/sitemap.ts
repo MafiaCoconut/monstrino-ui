@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
+import { routes as appRoutes } from '@/shared/routes/registry';
 import {
   getReleasesPage,
   getSeriesList,
@@ -34,7 +35,7 @@ export async function collectReleaseSitemapRoutes(base: string): Promise<Metadat
 
       seenSlugs.add(item.slug);
       routes.push({
-        url: `${base}/catalog/r/${item.slug}`,
+        url: `${base}${appRoutes.releaseDetail(item.slug)}`,
         lastModified: getUpdated(item.updated_at),
         changeFrequency: 'monthly',
         priority: 0.8,
@@ -70,12 +71,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // - series: monthly (0.7)
   // - character: yearly (0.6)
   // - pet: monthly (0.5)
+  // /catalog/{c,p,s} list pages are deliberately absent: they are CSR-only
+  // (noindex, follow — see route registry) until WP10.2 server list DTOs.
+  // Their SSR detail pages remain in the dynamic sections below.
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${base}/catalog/r`, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${base}/catalog/c`, changeFrequency: 'yearly', priority: 0.6 },
-    { url: `${base}/catalog/p`, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${base}/catalog/s`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/info`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${base}/info/about`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${base}/info/support`, changeFrequency: 'monthly', priority: 0.4 },
@@ -87,36 +88,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const ctx = { context: 'server' as const };
-  const releaseRoutes = await collectReleaseSitemapRoutes(base);
+
+  // Fail-safe section policy: a section whose backing endpoint is unavailable
+  // is omitted (and logged) rather than failing the whole sitemap. No fake or
+  // placeholder URLs are ever emitted for missing sections.
+  const releaseRoutes = await collectReleaseSitemapRoutes(base).catch((err) => {
+    console.error('[sitemap] release section unavailable, omitting:', err);
+    return [] as MetadataRoute.Sitemap;
+  });
 
   const [series, characters, pets] = await Promise.all([
-    getSeriesList(ctx).catch(() => []),
-    getCharactersList(ctx).catch(() => []),
-    getPetsList(ctx).catch(() => []),
+    getSeriesList(ctx).catch((err) => {
+      console.error('[sitemap] series section unavailable, omitting:', err);
+      return [];
+    }),
+    getCharactersList(ctx).catch((err) => {
+      console.error('[sitemap] character section unavailable, omitting:', err);
+      return [];
+    }),
+    getPetsList(ctx).catch((err) => {
+      console.error('[sitemap] pet section unavailable, omitting:', err);
+      return [];
+    }),
   ]);
 
   const seriesRoutes: MetadataRoute.Sitemap = series
-    .filter((item) => item.id)
+    .filter((item) => item.id != null)
     .map((item) => ({
-      url: `${base}/catalog/s/${item.id}`,
+      url: `${base}${appRoutes.seriesDetail(String(item.id))}`,
       lastModified: getUpdated(item.updated_at),
       changeFrequency: 'monthly',
       priority: 0.7,
     }));
 
   const characterRoutes: MetadataRoute.Sitemap = characters
-    .filter((item) => item.id)
+    .filter((item) => item.id != null)
     .map((item) => ({
-      url: `${base}/catalog/c/${item.id}`,
+      url: `${base}${appRoutes.characterDetail(String(item.id))}`,
       lastModified: getUpdated(item.updated_at),
       changeFrequency: 'yearly',
       priority: 0.6,
     }));
 
   const petRoutes: MetadataRoute.Sitemap = pets
-    .filter((item) => item.id)
+    .filter((item) => item.id != null)
     .map((item) => ({
-      url: `${base}/catalog/p/${item.id}`,
+      url: `${base}${appRoutes.petDetail(String(item.id))}`,
       lastModified: getUpdated(item.updated_at),
       changeFrequency: 'monthly',
       priority: 0.5,

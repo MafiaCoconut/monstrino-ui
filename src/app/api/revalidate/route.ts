@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { revalidateSecret } from "@/shared/config/env";
@@ -24,11 +25,18 @@ function buildTags(type: EntityType, id: string): string[] {
   return [`${type}-${id}`, `${type}-list`];
 }
 
-export async function POST(req: NextRequest) {
-  const secret = revalidateSecret;
-  const auth = req.headers.get("authorization");
+function isAuthorized(auth: string | null, secret: string | undefined): boolean {
+  if (!secret || !auth) return false;
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const provided = Buffer.from(auth);
+  // timingSafeEqual requires equal lengths; length comparison leaks only the
+  // secret's length, not its content.
+  if (expected.length !== provided.length) return false;
+  return timingSafeEqual(expected, provided);
+}
 
-  if (!secret || auth !== `Bearer ${secret}`) {
+export async function POST(req: NextRequest) {
+  if (!isAuthorized(req.headers.get("authorization"), revalidateSecret)) {
     return NextResponse.json({ revalidated: false, message: "Unauthorized" }, { status: 401 });
   }
 

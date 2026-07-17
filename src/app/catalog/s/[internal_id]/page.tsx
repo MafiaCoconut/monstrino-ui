@@ -2,11 +2,12 @@ import { useMockData } from '@/shared/config/env';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSeriesById } from '@/shared/api/resources';
-import { isApiError } from '@/shared/api/http';
+import { classifyEntityError, isMissingEntity } from '@/shared/api/entityStatus';
+import { isValidIdParam } from '@/shared/routes/params';
 import { seriesFromApiDto } from '@entities/series';
 import type { SeriesApiDto } from '@entities/series';
 import { getSiteUrl } from '@/shared/seo/siteUrl';
-import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/StructuredData';
+import { JsonLd, BreadcrumbJsonLd } from '@/shared/seo/structuredData';
 import { buildSeriesSchema } from '@/shared/seo/structuredData';
 import { buildSeriesDetailMetadata } from '@/shared/seo/detailMetadata';
 import { SeriesDetailView } from '@/widgets/detail';
@@ -19,10 +20,13 @@ type PageProps = {
 };
 
 async function getSeriesOrNotFound(id: string): Promise<SeriesApiDto> {
+  if (!isValidIdParam(id)) {
+    notFound();
+  }
   try {
     return await getSeriesById(id, { context: 'server' });
   } catch (err) {
-    if (isApiError(err) && err.status === 404) {
+    if (isMissingEntity(classifyEntityError(err))) {
       notFound();
     }
     throw err;

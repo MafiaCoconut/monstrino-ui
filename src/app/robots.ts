@@ -8,7 +8,10 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        // robots.txt is a crawl-budget hint, never access control:
+        // /admin is hard-closed by middleware (404 + X-Robots-Tag) and
+        // /favorites is noindex via its layout metadata.
+        disallow: ['/api/', '/admin/', '/admin', '/favorites'],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

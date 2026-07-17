@@ -4,9 +4,11 @@ export {
   ApiError,
   MalformedApiResponseError,
   NetworkError,
+  TimeoutError,
   ValidationError,
   isApiError,
   isMalformedApiResponseError,
   isNetworkError,
+  isTimeoutError,
   isValidationError,
 } from "./errors";

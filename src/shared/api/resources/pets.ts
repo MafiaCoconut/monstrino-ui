@@ -20,7 +20,7 @@ export async function getPetById(
       ? { revalidate: DETAIL_TTL, tags: [`pet-${id}`, "pet-list"], ...options.cache }
       : {};
 
-  const raw = await httpGet<unknown>(`/pets/${id}`, { ...options, cache });
+  const raw = await httpGet<unknown>(`/pets/${encodeURIComponent(id)}`, { ...options, cache });
 
   try {
     return petApiDtoSchema.parse(raw);

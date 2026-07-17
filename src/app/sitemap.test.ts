@@ -150,17 +150,44 @@ describe("sitemap release pagination", () => {
     ]);
   });
 
-  it("fails when pagination stops making progress before total is reached", async () => {
+  it("excludes CSR-only list pages (/catalog/{c,p,s}) from the static section", async () => {
+    getReleasesPageMock.mockResolvedValueOnce(makePage([], 0, 1));
+
+    const urls = (await sitemap()).map((e) => e.url);
+
+    expect(urls).toContain("https://monstrino.test/catalog/r");
+    expect(urls).not.toContain("https://monstrino.test/catalog/c");
+    expect(urls).not.toContain("https://monstrino.test/catalog/p");
+    expect(urls).not.toContain("https://monstrino.test/catalog/s");
+    // Duplicate /info legal routes must never appear either.
+    expect(urls).not.toContain("https://monstrino.test/info/privacy");
+    expect(urls).not.toContain("https://monstrino.test/info/terms");
+    expect(urls).not.toContain("https://monstrino.test/info/impressum");
+  });
+
+  it("omits the release section when pagination stops making progress", async () => {
     getReleasesPageMock
       .mockResolvedValueOnce(makePage([makeRelease(1), makeRelease(2)], 3, 1))
       .mockResolvedValueOnce(makePage([makeRelease(1), makeRelease(2)], 3, 2));
 
-    await expect(sitemap()).rejects.toThrow("made no progress");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const entries = await sitemap();
+    errorSpy.mockRestore();
+
+    // Fail-safe: the broken section is dropped, static routes survive,
+    // and no fake release URLs are emitted.
+    expect(releaseUrls(entries)).toEqual([]);
+    expect(entries.map((e) => e.url)).toContain("https://monstrino.test/");
   });
 
-  it("propagates release API failures", async () => {
+  it("omits the release section when the release API fails", async () => {
     getReleasesPageMock.mockRejectedValueOnce(new Error("release API down"));
 
-    await expect(sitemap()).rejects.toThrow("release API down");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const entries = await sitemap();
+    errorSpy.mockRestore();
+
+    expect(releaseUrls(entries)).toEqual([]);
+    expect(entries.map((e) => e.url)).toContain("https://monstrino.test/catalog/r");
   });
 });

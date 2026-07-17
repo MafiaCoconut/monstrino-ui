@@ -20,7 +20,7 @@ export async function getSeriesById(
       ? { revalidate: DETAIL_TTL, tags: [`series-${id}`, "series-list"], ...options.cache }
       : {};
 
-  const raw = await httpGet<unknown>(`/series/${id}`, { ...options, cache });
+  const raw = await httpGet<unknown>(`/series/${encodeURIComponent(id)}`, { ...options, cache });
 
   try {
     return seriesApiDtoSchema.parse(raw);

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Box, Button, Grid, Typography } from '@mui/material';
 import ReleaseCardCatalog from '@cards/release-card/ReleaseCardCatalog';
 import { useReleasesPage } from '@/shared/api/hooks';
+import type { ReleasesPageModel } from '@/shared/api/hooks';
 import { CatalogCardSkeleton } from '@/shared/ui/skeletons';
 import { CatalogHeader, CatalogLayout, CatalogPage, CatalogPagination } from '@/widgets/catalog';
 
@@ -54,12 +55,24 @@ function ErrorState({ onRetry }: ErrorStateProps) {
   );
 }
 
-export default function ReleaseCatalog() {
+type ReleaseCatalogProps = {
+  /**
+   * First catalog page fetched on the server so crawlers and link previews
+   * receive real release cards in the initial HTML. Client pagination and
+   * refetching behave exactly as before.
+   */
+  initialPage?: ReleasesPageModel;
+};
+
+export default function ReleaseCatalog({ initialPage }: ReleaseCatalogProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, isPending, isError, refetch } = useReleasesPage({
-    page: currentPage,
-    pageSize: PAGE_SIZE,
-  });
+  const { data, isPending, isError, refetch } = useReleasesPage(
+    {
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+    },
+    currentPage === 1 && initialPage ? { initialData: initialPage } : undefined,
+  );
 
   const releases = data?.items ?? [];
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;

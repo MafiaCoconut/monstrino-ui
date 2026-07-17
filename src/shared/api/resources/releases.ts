@@ -39,7 +39,7 @@ export async function getReleaseBySlug(
         }
       : {};
 
-  const raw = await httpGet<unknown>(`/releases/${slug}`, { ...options, cache });
+  const raw = await httpGet<unknown>(`/releases/${encodeURIComponent(slug)}`, { ...options, cache });
 
   try {
     return releaseApiDtoSchema.parse(raw);

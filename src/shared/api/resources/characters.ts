@@ -20,7 +20,7 @@ export async function getCharacterById(
       ? { revalidate: DETAIL_TTL, tags: [`character-${id}`, "character-list"], ...options.cache }
       : {};
 
-  const raw = await httpGet<unknown>(`/characters/${id}`, { ...options, cache });
+  const raw = await httpGet<unknown>(`/characters/${encodeURIComponent(id)}`, { ...options, cache });
 
   try {
     return characterApiDtoSchema.parse(raw);

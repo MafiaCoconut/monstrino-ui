@@ -29,8 +29,27 @@ const envSchema = z.object({
 
 // ─── Parse & export ───────────────────────────────────────────────────────────
 
+/**
+ * Next.js only inlines direct `process.env.NEXT_PUBLIC_*` member accesses into
+ * client bundles. Passing the whole `process.env` object to zod therefore sees
+ * an empty object in the browser and validation fails at runtime. Each variable
+ * must be read with an explicit member access.
+ *
+ * Server-only variables (SITE_URL, REVALIDATE_SECRET) are read the same way;
+ * they are `undefined` in the browser and their values are never inlined into
+ * client bundles.
+ */
+const rawEnv = {
+  NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
+  NEXT_PUBLIC_USE_MOCK_DATA: process.env.NEXT_PUBLIC_USE_MOCK_DATA,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  SITE_URL: process.env.SITE_URL,
+  REVALIDATE_SECRET: process.env.REVALIDATE_SECRET,
+  NODE_ENV: process.env.NODE_ENV,
+};
+
 function parseEnv() {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema.safeParse(rawEnv);
 
   if (!result.success) {
     // In dev/test, print a helpful error; in production, throw so the build fails
@@ -38,16 +57,13 @@ function parseEnv() {
       .map((i) => `  ${i.path.join(".")}: ${i.message}`)
       .join("\n");
 
-    if (process.env.NODE_ENV === "production") {
+    if (rawEnv.NODE_ENV === "production") {
       throw new Error(`Invalid environment configuration:\n${message}`);
     } else {
       console.warn(`[monstrino] Invalid environment configuration:\n${message}`);
     }
     // Return best-effort object so the app still loads in dev
-    return result.error.issues.reduce(
-      (acc) => acc,
-      process.env as unknown as z.infer<typeof envSchema>,
-    );
+    return rawEnv as unknown as z.infer<typeof envSchema>;
   }
 
   return result.data;
@@ -62,7 +78,14 @@ export const isProd = config.NODE_ENV === "production";
 export const isTest = config.NODE_ENV === "test";
 
 export const backendUrl = config.NEXT_PUBLIC_BACKEND_URL;
-export const useMockData = config.NEXT_PUBLIC_USE_MOCK_DATA;
+
+/**
+ * Mock mode is a development/demo switch only. In production builds it is
+ * forcibly disabled so a stray NEXT_PUBLIC_USE_MOCK_DATA=true can never make
+ * the public site silently serve mock data instead of the real catalog.
+ */
+export const useMockData = Boolean(config.NEXT_PUBLIC_USE_MOCK_DATA) && !isProd;
+
 export const siteUrl =
   config.SITE_URL ?? config.NEXT_PUBLIC_SITE_URL ?? "https://monstrino.com";
 export const revalidateSecret = config.REVALIDATE_SECRET;
