@@ -1,0 +1,19 @@
+node_modules
+.next
+.git
+npm-debug.log
+Dockerfile
+.dockerignore
+
+# secrets - never ship into the image
+.env
+.env.*
+!.env.example
+
+# legacy / non-runtime content
+ui-old
+docs
+*.md
+*.tsbuildinfo
+next-env.d.ts
+tsconfig.tsbuildinfo

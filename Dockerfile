@@ -4,7 +4,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 RUN npm ci --no-audit --no-fund
-COPY . .
+
+COPY next.config.ts tsconfig.json postcss.config.cjs tailwind.config.cjs eslint.config.mjs ./
+COPY public ./public
+COPY src ./src
+
 RUN npm run build
 
 FROM node:24-alpine AS runner
